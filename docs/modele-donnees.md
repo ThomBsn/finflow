@@ -115,15 +115,16 @@ Mensualités : `total / N` arrondi au centime, **le reliquat d'arrondi sur la de
 | `create_installment_plan(...)` | Crée le plan + ses N transactions |
 | `private.distribute_savings(p_user, p_amount, p_mode, p_project_id, p_date)` | Interne : vire du courant vers l'épargne et répartit (spec §5) ; appelée par `close_month` et la future saisie manuelle |
 | `private.generate_subscription_charges(p_date)` | Interne, tous utilisateurs : crée les prélèvements dus du mois de `p_date` et du mois précédent, jamais avant la création de l'abonnement ; idempotent via l'index unique |
-| `complete_onboarding(...)` | Settings, soldes initiaux, premier `monthly_settlements` `pending` (spec §9) |
+| `complete_onboarding(p_courant, p_safety_fund, p_general_savings)` | Soldes de départ, ouvre le mois en cours ; une seule fois (spec §9) |
 
 Le schéma `private` n'est pas exposé par l'API ; seules `close_month` et `rebalance_from_safety_fund` sont appelables par le client.
-Erreurs métier (SQLSTATE) : `FF001` mois pas en cours · `FF002` mois suivant existant · `FF003` projet d'épargne inconnu · `FF004` montant invalide.
+Erreurs métier (SQLSTATE) : `FF001` mois pas en cours · `FF002` mois suivant existant · `FF003` projet d'épargne inconnu · `FF004` montant invalide · `FF005` onboarding déjà fait · `FF006` budget système (Abonnements, Frais externes) non renommable ni supprimable.
+Renommer un budget renomme ses transactions (trigger `budget_category_change`).
 Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne` épargne → courant (`account_id` → `target_account_id`).
 
 ## Tâches planifiées (pg_cron)
 - Quotidienne : `private.generate_subscription_charges(current_date)`
 
 ## Vues
-- `budget_status_current_month` : par catégorie → alloué (pour « Abonnements » : somme des abonnements actifs), dépensé, reste
+- `budget_status_current_month` (security invoker) : par budget, sur le mois `pending` → alloué (pour « Abonnements » : somme des abonnements actifs), dépensé (dépenses − revenus), reste
 - `current_month_summary` : soldes, dépenses non réglées, disponible estimé (réutilisable pour un futur widget)

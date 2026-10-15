@@ -60,7 +60,9 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 
 ## 6. Budgets
 - Un budget = une catégorie + un montant mensuel alloué + une icône.
-- Consommé du mois = somme des dépenses de la catégorie sur le mois, **hors `hors_budget`**.
+- Le mois affiché est le mois en cours (`pending`), pas le mois calendaire.
+- Consommé du mois = dépenses − revenus de la catégorie sur le mois, **hors `hors_budget`** (un budget lui-même hors budget, comme Frais externes, affiche ses propres dépenses sans enveloppe).
+- Renommer un budget renomme aussi ses transactions. « Abonnements » et « Frais externes » sont utilisés par l'app : ni renommables ni supprimables.
 - **Abonnements** : tous dans la catégorie unique **« Abonnements »** (budget créé par le seed).
   - Alloué du budget = somme des `amount` des abonnements actifs (calculé, non saisi).
   - Le jour `billing_day` de chaque mois, une tâche planifiée crée une `depense` (catégorie Abonnements, `settled = false`, `subscription_id` renseigné). Si ce jour n'existe pas dans le mois (ex. 31 en février), on prend le dernier jour du mois.
@@ -77,15 +79,17 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 Case à cocher dans la modale de transition : étapes 1, 2, 3 et 5 normales, **étape 4 sautée**. Le surplus reste sur le courant pour ajustement manuel.
 
 ## 9. Onboarding
-Au premier lancement (RPC `complete_onboarding`) :
-- saisie des `settings` : salaire, virement compte commun, marge de sécurité ;
-- saisie du solde initial du courant et des soldes initiaux des projets d'épargne ;
-- création du `monthly_settlements` `pending` du mois en cours.
+Au premier lancement, en cours de mois (RPC `complete_onboarding`) :
+- solde du courant **après** la transition du mois (prérempli avec la marge de sécurité, modifiable) ;
+- soldes du Fond de sécurité et d'Épargne générale (les autres projets viendront avec la reprise Base44) ;
+- ouverture du mois en cours (heure de Paris) en `pending`.
+
+Pas de salaire demandé : il est saisi dans la modale de transition. Ensuite, l'utilisateur saisit les dépenses faites depuis le début du mois, **sauf** le virement compte commun et l'épargne du mois, déjà inclus dans le solde de départ.
 
 ## 10. Pages
 | Page | Contenu |
 |---|---|
-| Onboarding | Paramètres et soldes initiaux (premier lancement uniquement) |
+| Onboarding | Soldes de départ (premier lancement uniquement) |
 | Dashboard | Soldes, alerte négatif + rééquilibrage, résumé du mois, budgets, abonnements, échelonnements, projets d'épargne, transactions récentes, bouton de transition |
 | Dépenses | Onglets transactions / abonnements (CRUD), filtres mois + catégorie |
 | Budgets | Alloué vs dépensé vs reste par catégorie |

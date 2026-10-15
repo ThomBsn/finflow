@@ -24,11 +24,15 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** tous les tests passent, aucune logique de solde côté client.
 
 ## Lot 3 — Saisie quotidienne
-- [ ] Modèles Dart des tables utilisées (écrits à la main : le CLI Supabase ne génère pas de types Dart)
-- [ ] Onboarding : RPC `complete_onboarding` + écran
-- [ ] CRUD transactions, filtres mois / catégorie
-- [ ] CRUD budgets, vue `budget_status_current_month`
+- [x] Modèles Dart des tables utilisées (écrits à la main : le CLI Supabase ne génère pas de types Dart)
+- [x] Onboarding : RPC `complete_onboarding` + écran
+- [x] CRUD transactions, filtres mois / catégorie
+- [x] CRUD budgets, vue `budget_status_current_month`
 **Fin :** on peut tenir un mois complet à la main.
+
+## Lot 3 bis — Transition (avancé du lot 5, nécessaire au 1er novembre)
+- [ ] Modale « Passer au mois suivant » : salaire et virement commun préremplis avec les valeurs du mois précédent, case « Mois particulier »
+- [ ] Dashboard minimal : soldes, disponible estimé, bouton de transition, alerte négatif + rééquilibrage
 
 ## Lot 4 — Compléments
 - [ ] Abonnements : CRUD, budget « Abonnements » calculé, job pg_cron quotidien
