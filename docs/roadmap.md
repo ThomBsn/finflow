@@ -3,9 +3,9 @@
 Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Mettre à jour ce fichier en fin de lot.
 
 ## Lot 0 — Socle
-- [ ] Projet Flutter (cibles Android + web), analyse stricte, thème Material 3 (DM Sans / Inter, mode sombre)
-- [ ] Supabase local (CLI), `supabase_flutter` configuré, variables d'env (`--dart-define`)
-- [ ] Auth email + page de connexion, routes protégées
+- [x] Projet Flutter (cibles Android + web), analyse stricte, thème Material 3 (DM Sans / Inter, mode sombre)
+- [x] Supabase local (CLI), `supabase_flutter` configuré, variables d'env (`--dart-define`)
+- [x] Auth email + page de connexion, routes protégées
 **Fin :** connexion fonctionne sur Android et sur le web, navigation vers les 5 pages vides.
 
 ## Lot 1 — Données
@@ -13,7 +13,7 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 - [ ] Trigger : somme des pourcentages ≤ 100
 - [ ] Colonne calculée `transactions.month`
 - [ ] Seed : comptes, Fond de sécurité, Épargne générale, catégories, « Frais externes » hors budget, budget « Abonnements »
-- [ ] Types TS générés
+- [ ] Modèles Dart des tables (le CLI Supabase ne génère pas de types Dart)
 **Fin :** `supabase db reset` passe, un 2e utilisateur ne voit rien des données du 1er.
 
 ## Lot 2 — Cœur métier (tests d'abord)
