@@ -1,7 +1,23 @@
 # Modèle de données — Supabase / Postgres
 
-Toutes les tables : `id uuid pk default gen_random_uuid()`, `user_id uuid not null references auth.users`, `created_at timestamptz default now()`, RLS `user_id = auth.uid()`.
+Toutes les tables : `id uuid pk default gen_random_uuid()`, `user_id uuid not null default auth.uid() references auth.users`, `created_at timestamptz default now()`, RLS `user_id = auth.uid()`.
 Montants : `numeric(12,2)`. Mois : `date` = premier jour du mois (check `extract(day from month) = 1`).
+Clés étrangères composites `(fk, user_id) → (id, user_id)` : une ligne ne peut pas référencer une ligne d'un autre utilisateur.
+Schéma : [supabase/migrations/](../supabase/migrations/) · tests : [supabase/tests/database/](../supabase/tests/database/).
+
+## Droits d'écriture du client
+Lecture : ses propres lignes. Écriture accordée colonne par colonne ; tout le reste passe par les RPC.
+| Table | Le client peut |
+|---|---|
+| settings | modifier salaire, virement commun, marge |
+| accounts | renommer (jamais `balance`) |
+| budgets, subscriptions | tout |
+| savings_projects | créer / modifier nom, pourcentage, objectif ; supprimer un projet vide, sauf Fond de sécurité et Épargne générale |
+| transactions | créer / modifier / supprimer des `depense` et `revenu` non réglées, hors échelonnements (jamais `settled`) |
+| installment_plans, monthly_settlements | lire seulement |
+
+## Données par défaut
+Créées à l'inscription (trigger sur `auth.users` → `init_user_data`) : settings, comptes courant + épargne, Fond de sécurité, Épargne générale, budgets Courses, Logement, Transport, Restaurants, Loisirs, Santé, Shopping, Abonnements, Frais externes (hors budget).
 
 ## Enums
 - `account_type` : `courant`, `epargne` (pas de compte commun : le virement est une dépense « Frais externes »)
@@ -20,7 +36,7 @@ Montants : `numeric(12,2)`. Mois : `date` = premier jour du mois (check `extract
 | Champ | Type | Note |
 |---|---|---|
 | name | text | |
-| type | account_type | un seul `courant` par utilisateur (index unique partiel) |
+| type | account_type | un seul compte par type et par utilisateur |
 | balance | numeric | modifié **uniquement** par les RPC |
 
 ## budgets
@@ -40,7 +56,7 @@ Montants : `numeric(12,2)`. Mois : `date` = premier jour du mois (check `extract
 | amount | numeric | > 0, le sens dépend du type |
 | label | text | |
 | category | text | |
-| account_id | uuid → accounts | |
+| account_id | uuid → accounts | compte courant si non renseigné (trigger) |
 | target_account_id | uuid → accounts | null sauf transferts |
 | hors_budget | bool | défaut false |
 | settled | bool | défaut false |
@@ -58,7 +74,7 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | percentage | numeric(5,2) | 0–100, somme ≤ 100 (vérifiée par trigger) |
 | target_amount | numeric | null = sans plafond |
 | current_amount | numeric | ≥ 0 |
-| is_default | bool | Épargne générale, un seul (index unique partiel) |
+| is_default | bool | Épargne générale, un seul (index unique partiel) ; pourcentage 0 et sans plafond |
 | is_safety_fund | bool | Fond de sécurité, un seul (index unique partiel) |
 
 ## subscriptions

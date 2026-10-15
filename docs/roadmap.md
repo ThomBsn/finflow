@@ -9,12 +9,11 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** connexion fonctionne sur Android et sur le web, navigation vers les 5 pages vides.
 
 ## Lot 1 — Données
-- [ ] Migrations : enums, tables, contraintes, index, RLS
-- [ ] Trigger : somme des pourcentages ≤ 100
-- [ ] Colonne calculée `transactions.month`
-- [ ] Seed : comptes, Fond de sécurité, Épargne générale, catégories, « Frais externes » hors budget, budget « Abonnements »
-- [ ] Modèles Dart des tables (le CLI Supabase ne génère pas de types Dart)
-**Fin :** `supabase db reset` passe, un 2e utilisateur ne voit rien des données du 1er.
+- [x] Migrations : enums, tables, contraintes, index, RLS
+- [x] Trigger : somme des pourcentages ≤ 100
+- [x] Colonne calculée `transactions.month`
+- [x] Données par défaut à l'inscription (trigger) : comptes, Fond de sécurité, Épargne générale, catégories, « Frais externes » hors budget, budget « Abonnements »
+**Fin :** les migrations s'appliquent sur une base vierge, un 2e utilisateur ne voit rien des données du 1er (`supabase test db`).
 
 ## Lot 2 — Cœur métier (tests d'abord)
 - [ ] Tests des exemples chiffrés de la spec (§3 normal, négatif, mois particulier)
@@ -25,6 +24,7 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** tous les tests passent, aucune logique de solde côté client.
 
 ## Lot 3 — Saisie quotidienne
+- [ ] Modèles Dart des tables utilisées (écrits à la main : le CLI Supabase ne génère pas de types Dart)
 - [ ] Onboarding : RPC `complete_onboarding` + écran
 - [ ] CRUD transactions, filtres mois / catégorie
 - [ ] CRUD budgets, vue `budget_status_current_month`
@@ -41,6 +41,7 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 - [ ] Pages Budgets, Épargne
 - [ ] Distribution : historique + Sankey
 - [ ] Reprise des données Base44 (export manuel → script d'import)
+- [ ] Mise en production : projet Supabase Cloud (migrations + job pg_cron), web servi par un conteneur sur le serveur perso, APK release sur le téléphone
 **Fin :** l'app remplace Base44 au quotidien.
 
 ## Lot 6 — Bonus
