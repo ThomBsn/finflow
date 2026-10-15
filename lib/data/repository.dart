@@ -34,6 +34,51 @@ class FinflowRepository {
     return [for (final r in rows) DateTime.parse(r['month'] as String)];
   }
 
+  /// Résumé du mois en cours, null avant l'onboarding.
+  Future<MonthSummary?> monthSummary() async {
+    final row = await _db.from('current_month_summary').select().maybeSingle();
+    return row == null ? null : MonthSummary.fromJson(row);
+  }
+
+  // Transition -------------------------------------------------------------
+
+  Future<CloseResult> previewCloseMonth({
+    required double salary,
+    required double sharedTransfer,
+    required bool specialMonth,
+  }) async => CloseResult.fromJson(
+    await _db.rpc<Json>(
+      'preview_close_month',
+      params: {
+        'p_salary': salary,
+        'p_shared_transfer': sharedTransfer,
+        'p_special_month': specialMonth,
+      },
+    ),
+  );
+
+  Future<CloseResult> closeMonth({
+    required DateTime month,
+    required double salary,
+    required double sharedTransfer,
+    required bool specialMonth,
+  }) async => CloseResult.fromJson(
+    await _db.rpc<Json>(
+      'close_month',
+      params: {
+        'p_month': dbDate(month),
+        'p_salary': salary,
+        'p_shared_transfer': sharedTransfer,
+        'p_special_month': specialMonth,
+      },
+    ),
+  );
+
+  Future<RebalanceResult> rebalanceFromSafetyFund() async =>
+      RebalanceResult.fromJson(
+        await _db.rpc<Json>('rebalance_from_safety_fund'),
+      );
+
   // Onboarding -------------------------------------------------------------
 
   Future<double> safetyMargin() async {

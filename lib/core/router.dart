@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../data/providers.dart';
 import '../features/auth/login_page.dart';
 import '../features/budgets/budgets_page.dart';
+import '../features/dashboard/dashboard_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/shell/app_shell.dart';
 import '../features/shell/placeholder_page.dart';
@@ -79,6 +80,7 @@ GoRouter createRouter(GoTrueClient auth, OnboardingGate gate) {
 }
 
 Widget _pageFor(AppDestination destination) => switch (destination.path) {
+  '/' => const DashboardPage(),
   '/depenses' => const TransactionsPage(),
   '/budgets' => const BudgetsPage(),
   _ => PlaceholderPage(title: destination.label),

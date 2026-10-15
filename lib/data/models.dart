@@ -137,6 +137,78 @@ class Transaction {
   };
 }
 
+/// Ligne de la vue `current_month_summary`.
+class MonthSummary {
+  const MonthSummary({
+    required this.month,
+    required this.courant,
+    required this.epargne,
+    required this.unsettledExpenses,
+    required this.available,
+    required this.safetyMargin,
+    required this.suggestedSalary,
+    required this.suggestedSharedTransfer,
+  });
+
+  factory MonthSummary.fromJson(Json json) => MonthSummary(
+    month: _date(json['month']),
+    courant: _money(json['courant']),
+    epargne: _money(json['epargne']),
+    unsettledExpenses: _money(json['unsettled_expenses']),
+    available: _money(json['available']),
+    safetyMargin: _money(json['safety_margin']),
+    suggestedSalary: _money(json['suggested_salary']),
+    suggestedSharedTransfer: _money(json['suggested_shared_transfer']),
+  );
+
+  final DateTime month;
+  final double courant;
+  final double epargne;
+
+  /// Dépenses − revenus non réglés, déduits à la prochaine transition.
+  final double unsettledExpenses;
+
+  /// Disponible estimé = courant − dépenses non réglées.
+  final double available;
+  final double safetyMargin;
+  final double suggestedSalary;
+  final double suggestedSharedTransfer;
+
+  DateTime get nextMonth => DateTime(month.year, month.month + 1);
+}
+
+/// Résultat (ou aperçu) de `close_month`.
+class CloseResult {
+  const CloseResult({
+    required this.totalExpenses,
+    required this.totalSavings,
+    required this.courant,
+  });
+
+  factory CloseResult.fromJson(Json json) => CloseResult(
+    totalExpenses: _money(json['total_expenses']),
+    totalSavings: _money(json['total_savings']),
+    courant: _money(json['courant']),
+  );
+
+  final double totalExpenses;
+  final double totalSavings;
+  final double courant;
+}
+
+/// Résultat de `rebalance_from_safety_fund`.
+class RebalanceResult {
+  const RebalanceResult({required this.withdrawn, required this.remaining});
+
+  factory RebalanceResult.fromJson(Json json) => RebalanceResult(
+    withdrawn: _money(json['withdrawn']),
+    remaining: _money(json['remaining']),
+  );
+
+  final double withdrawn;
+  final double remaining;
+}
+
 /// Saisie d'une dépense ou d'un revenu (création si [id] est null).
 class TransactionDraft {
   const TransactionDraft({

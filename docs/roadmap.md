@@ -31,8 +31,8 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** on peut tenir un mois complet à la main.
 
 ## Lot 3 bis — Transition (avancé du lot 5, nécessaire au 1er novembre)
-- [ ] Modale « Passer au mois suivant » : salaire et virement commun préremplis avec les valeurs du mois précédent, case « Mois particulier »
-- [ ] Dashboard minimal : soldes, disponible estimé, bouton de transition, alerte négatif + rééquilibrage
+- [x] Modale « Passer au mois suivant » : salaire et virement commun préremplis avec les valeurs du mois précédent, case « Mois particulier », aperçu calculé par la base
+- [x] Dashboard minimal : soldes, disponible estimé, bouton de transition, alerte négatif + rééquilibrage
 
 ## Lot 4 — Compléments
 - [ ] Abonnements : CRUD, budget « Abonnements » calculé, job pg_cron quotidien

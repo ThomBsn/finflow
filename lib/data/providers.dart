@@ -23,6 +23,11 @@ final currentMonthProvider = FutureProvider<DateTime?>((ref) {
   return ref.watch(repositoryProvider).currentMonth();
 });
 
+final monthSummaryProvider = FutureProvider<MonthSummary?>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).monthSummary();
+});
+
 final monthsProvider = FutureProvider<List<DateTime>>((ref) {
   _watchUser(ref);
   return ref.watch(repositoryProvider).months();
@@ -53,4 +58,13 @@ void invalidateMonthData(WidgetRef ref) {
   ref.invalidate(transactionsProvider);
   ref.invalidate(budgetStatusProvider);
   ref.invalidate(budgetsProvider);
+  ref.invalidate(monthSummaryProvider);
+}
+
+/// À appeler après une transition ou un rééquilibrage : le mois en cours et
+/// les soldes changent.
+void invalidateAll(WidgetRef ref) {
+  invalidateMonthData(ref);
+  ref.invalidate(currentMonthProvider);
+  ref.invalidate(monthsProvider);
 }
