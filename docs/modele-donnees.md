@@ -110,15 +110,19 @@ Mensualités : `total / N` arrondi au centime, **le reliquat d'arrondi sur la de
 ## RPC
 | Fonction | Rôle |
 |---|---|
-| `close_month(p_salary, p_shared_transfer, p_special_month)` | Transition complète (spec §3) |
+| `close_month(p_month, p_salary, p_shared_transfer, p_special_month)` | Transition complète (spec §3) ; renvoie totaux et solde courant |
 | `rebalance_from_safety_fund()` | Ramène le courant vers 0 depuis le Fond de sécurité, retrait partiel si insuffisant ; renvoie montant retiré et reste à couvrir (spec §4) |
 | `create_installment_plan(...)` | Crée le plan + ses N transactions |
-| `distribute_savings(p_amount, p_mode, p_project_id)` | Interne, appelée par `close_month` et la saisie manuelle |
-| `generate_subscription_charges(p_date)` | `security definer`, tous utilisateurs : crée les prélèvements des abonnements actifs dus entre le 1er du mois et `p_date` (rattrape les jours manqués, idempotent via l'index unique) |
+| `private.distribute_savings(p_user, p_amount, p_mode, p_project_id, p_date)` | Interne : vire du courant vers l'épargne et répartit (spec §5) ; appelée par `close_month` et la future saisie manuelle |
+| `private.generate_subscription_charges(p_date)` | Interne, tous utilisateurs : crée les prélèvements dus du mois de `p_date` et du mois précédent, jamais avant la création de l'abonnement ; idempotent via l'index unique |
 | `complete_onboarding(...)` | Settings, soldes initiaux, premier `monthly_settlements` `pending` (spec §9) |
 
+Le schéma `private` n'est pas exposé par l'API ; seules `close_month` et `rebalance_from_safety_fund` sont appelables par le client.
+Erreurs métier (SQLSTATE) : `FF001` mois pas en cours · `FF002` mois suivant existant · `FF003` projet d'épargne inconnu · `FF004` montant invalide.
+Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne` épargne → courant (`account_id` → `target_account_id`).
+
 ## Tâches planifiées (pg_cron)
-- Quotidienne : `generate_subscription_charges(current_date)`
+- Quotidienne : `private.generate_subscription_charges(current_date)`
 
 ## Vues
 - `budget_status_current_month` : par catégorie → alloué (pour « Abonnements » : somme des abonnements actifs), dépensé, reste

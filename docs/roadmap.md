@@ -16,11 +16,11 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** les migrations s'appliquent sur une base vierge, un 2e utilisateur ne voit rien des données du 1er (`supabase test db`).
 
 ## Lot 2 — Cœur métier (tests d'abord)
-- [ ] Tests des exemples chiffrés de la spec (§3 normal, négatif, mois particulier)
-- [ ] `distribute_savings` + tests de cascade (projet plein → Fond → Épargne générale, complément à 100 %, reliquat d'arrondi → Épargne générale, cascade en mode précis)
-- [ ] `close_month` + tests d'idempotence + `total_expenses` hors virement commun
-- [ ] `rebalance_from_safety_fund` + test Fond insuffisant (retrait partiel, reste à couvrir renvoyé)
-- [ ] `generate_subscription_charges` + tests (31 en février, rejeu sans doublon, mois déjà clôturé)
+- [x] Tests des exemples chiffrés de la spec (§3 normal, négatif, mois particulier)
+- [x] `distribute_savings` + tests de cascade (projet plein → Fond → Épargne générale, complément à 100 %, reliquat d'arrondi → Épargne générale, cascade en mode précis)
+- [x] `close_month` + tests d'idempotence + `total_expenses` hors virement commun
+- [x] `rebalance_from_safety_fund` + test Fond insuffisant (retrait partiel, reste à couvrir renvoyé)
+- [x] `generate_subscription_charges` + tests (31 en février, rejeu sans doublon, mois déjà clôturé)
 **Fin :** tous les tests passent, aucune logique de solde côté client.
 
 ## Lot 3 — Saisie quotidienne

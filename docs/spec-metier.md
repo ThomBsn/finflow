@@ -7,17 +7,19 @@ Constante : `SAFETY_MARGIN = 200 €` (stockée dans `settings.safety_margin`).
 
 ## 2. Pendant le mois
 - L'utilisateur saisit dépenses et revenus. Une dépense a `settled = false` tant que le mois n'est pas clôturé.
+- Un **revenu** saisi en cours de mois (remboursement, prime…) vient **en déduction des dépenses** : il augmente d'autant l'épargne du mois.
 - Le solde affiché du compte courant ne bouge pas avec les dépenses.
 - Le dashboard affiche en plus un **« disponible estimé »** = solde courant − dépenses non réglées du mois.
 
 ## 3. Transition « Passer au mois suivant » (RPC `close_month`)
 Paramètres (préremplis depuis `settings`, modifiables dans la modale) :
+- `month` : le mois à clôturer (le mois en cours affiché) — rend l'appel idempotent
 - `salary` : salaire du nouveau mois
 - `shared_transfer` : virement compte commun du nouveau mois (variable chaque mois)
 - `special_month` : booléen « Mois particulier »
 
 Étapes, **dans cet ordre**, dans une seule transaction :
-1. **Dépenses du mois M** : `courant -= somme des dépenses non réglées avec month ≤ M` (hors budget inclus), puis `settled = true`.
+1. **Dépenses du mois M** : `courant -= (dépenses − revenus) non réglés avec month ≤ M` (hors budget inclus), puis `settled = true`.
    Le `≤` rattrape une dépense datée d'un mois déjà clôturé (ex. prélèvement d'abonnement créé par la tâche planifiée après une clôture anticipée).
 2. **Salaire M+1** : création d'une transaction `revenu`, `courant += salary`.
 3. **Compte commun M+1** : création d'une `depense` catégorie « Frais externes », `hors_budget = true`, `settled = true`, `courant -= shared_transfer`.
@@ -26,9 +28,10 @@ Paramètres (préremplis depuis `settings`, modifiables dans la modale) :
    - si `savings > 0` : transfert vers l'épargne, distribué selon §5 → `courant = 200`
    - si `savings ≤ 0` : aucun transfert, le courant reste tel quel (peut être < 200 ou négatif)
 5. **Clôture** : `monthly_settlements` de M → `settled` (avec totaux), création de M+1 en `pending`.
-   `total_expenses` = somme des dépenses réglées à l'étape 1. Le virement compte commun (déjà `settled = true`, stocké dans `shared_transfer`) n'y est **pas** compté.
+   `total_expenses` = montant net réglé à l'étape 1 (dépenses − revenus). Le virement compte commun (déjà `settled = true`, stocké dans `shared_transfer`) n'y est **pas** compté.
 
-Garde-fous : refus si M n'est pas `pending` ou si M+1 existe déjà (idempotence).
+Garde-fous : refus si M n'est pas `pending` (`FF001`, ex. double clic) ou si M+1 existe déjà (`FF002`).
+Le salaire et le virement commun de M+1 sont créés réglés : ils ne repassent pas à la clôture suivante.
 
 ### Exemple chiffré (à transformer en test)
 Courant avant transition = 350 · dépenses M = 1 400 · salaire = 2 500 · commun = 600
