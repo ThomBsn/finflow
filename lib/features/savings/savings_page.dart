@@ -143,9 +143,7 @@ class _ProjectCard extends StatelessWidget {
                 ),
               const SizedBox(height: 12),
               Text(
-                target == null
-                    ? euro(p.currentAmount)
-                    : '${euro(p.currentAmount)} / ${euro(target)}',
+                savingsProgress(p.currentAmount, target),
                 style: theme.textTheme.bodyLarge,
               ),
               if (target != null) ...[

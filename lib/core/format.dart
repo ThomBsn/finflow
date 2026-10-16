@@ -23,3 +23,11 @@ String amountInput(double value) {
       : value.toStringAsFixed(2);
   return text.replaceAll('.', ',');
 }
+
+/// « 1 000,00 € / 3 000,00 € · 33 % », ou le montant seul sans objectif.
+/// Pourcentage arrondi à l'inférieur : « 100 % » seulement une fois atteint.
+String savingsProgress(double current, double? target) {
+  if (target == null || target <= 0) return euro(current);
+  final percent = (current / target * 100).floor();
+  return '${euro(current)} / ${euro(target)} · $percent %';
+}

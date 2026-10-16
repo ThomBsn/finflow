@@ -391,9 +391,7 @@ class SavingsSection extends ConsumerWidget {
                       children: [
                         Expanded(child: Text(p.name)),
                         Text(
-                          p.targetAmount == null
-                              ? euro(p.currentAmount)
-                              : '${euro(p.currentAmount)} / ${euro(p.targetAmount!)}',
+                          savingsProgress(p.currentAmount, p.targetAmount),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],

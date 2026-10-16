@@ -15,4 +15,11 @@ void main() {
     expect(amountInput(200), '200');
     expect(amountInput(12.5), '12,50');
   });
+
+  test('savingsProgress : montant, objectif et pourcentage arrondi', () {
+    expect(savingsProgress(1000, 3000), '${euro(1000)} / ${euro(3000)} · 33 %');
+    expect(savingsProgress(2999, 3000), endsWith('· 99 %'));
+    expect(savingsProgress(3200, 3000), endsWith('· 106 %'));
+    expect(savingsProgress(500, null), euro(500));
+  });
 }
