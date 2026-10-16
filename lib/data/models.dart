@@ -254,6 +254,7 @@ class Subscription {
     required this.amount,
     required this.billingDay,
     required this.active,
+    this.lastChargeDate,
   });
 
   factory Subscription.fromJson(Json json) => Subscription(
@@ -262,6 +263,9 @@ class Subscription {
     amount: _money(json['amount']),
     billingDay: json['billing_day'] as int,
     active: json['active'] as bool,
+    lastChargeDate: json['last_charge_date'] == null
+        ? null
+        : _date(json['last_charge_date']),
   );
 
   final String id;
@@ -269,6 +273,26 @@ class Subscription {
   final double amount;
   final int billingDay;
   final bool active;
+  final DateTime? lastChargeDate;
+
+  /// Prochain prélèvement à partir de [today] : jour ramené en fin de mois,
+  /// mois suivant si celui de [today] est déjà prélevé ou passé.
+  DateTime nextCharge(DateTime today) {
+    DateTime chargeIn(int year, int month) {
+      final lastDay = DateTime(year, month + 1, 0).day;
+      return DateTime(year, month, billingDay > lastDay ? lastDay : billingDay);
+    }
+
+    final thisMonth = chargeIn(today.year, today.month);
+    final charged =
+        lastChargeDate != null &&
+        lastChargeDate!.year == today.year &&
+        lastChargeDate!.month == today.month;
+    final todayDate = DateTime(today.year, today.month, today.day);
+    return charged || thisMonth.isBefore(todayDate)
+        ? chargeIn(today.year, today.month + 1)
+        : thisMonth;
+  }
 }
 
 /// Ligne de la vue `installment_plans_status` : dépense étalée sur son budget.

@@ -7,11 +7,15 @@ import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import 'close_month_sheet.dart';
+import 'dashboard_sections.dart';
 
-/// Dashboard minimal : disponible estimé, soldes, alerte découvert,
-/// transition de mois.
+/// Dashboard : disponible estimé, soldes, alerte découvert, transition de
+/// mois, puis un aperçu de chaque page (une colonne sur téléphone, deux sur
+/// grand écran).
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
+
+  static const _twoColumns = 900.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,42 +42,81 @@ class DashboardPage extends ConsumerWidget {
         data: (s) => s == null
             ? const Center(child: Text('Aucun mois en cours'))
             : RefreshIndicator(
-                onRefresh: () => ref.refresh(monthSummaryProvider.future),
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (s.courant < 0) ...[
-                      _OverdraftAlert(summary: s),
-                      const SizedBox(height: 12),
-                    ],
-                    _AvailableCard(summary: s),
-                    const SizedBox(height: 12),
-                    Row(
+                onRefresh: () async {
+                  invalidateMonthData(ref);
+                  await ref.read(monthSummaryProvider.future);
+                },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= _twoColumns;
+                    const budgets = BudgetsSection();
+                    const charges = UpcomingChargesSection();
+                    const installments = InstallmentsSection();
+                    const savings = SavingsSection();
+                    final recent = RecentTransactionsSection(month: s.month);
+
+                    return ListView(
+                      padding: const EdgeInsets.all(16),
                       children: [
-                        Expanded(
-                          child: _BalanceCard(
-                            label: 'Compte courant',
-                            value: s.courant,
-                            icon: Icons.account_balance,
-                          ),
+                        if (s.courant < 0) ...[
+                          _OverdraftAlert(summary: s),
+                          const SizedBox(height: 12),
+                        ],
+                        _AvailableCard(summary: s),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _BalanceCard(
+                                label: 'Compte courant',
+                                value: s.courant,
+                                icon: Icons.account_balance,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _BalanceCard(
+                                label: 'Épargne',
+                                value: s.epargne,
+                                icon: Icons.savings,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _BalanceCard(
-                            label: 'Épargne',
-                            value: s.epargne,
-                            icon: Icons.savings,
-                          ),
+                        const SizedBox(height: 16),
+                        FilledButton.icon(
+                          onPressed: () => _closeMonth(context, s),
+                          icon: const Icon(Icons.event_repeat),
+                          label: const Text('Passer au mois suivant'),
                         ),
+                        const SizedBox(height: 16),
+                        if (wide)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  children: [budgets, installments],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  children: [recent, charges, savings],
+                                ),
+                              ),
+                            ],
+                          )
+                        else ...[
+                          budgets,
+                          recent,
+                          charges,
+                          installments,
+                          savings,
+                        ],
                       ],
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: () => _closeMonth(context, s),
-                      icon: const Icon(Icons.event_repeat),
-                      label: const Text('Passer au mois suivant'),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
       ),
