@@ -1,5 +1,5 @@
-# 003 — Les abonnements ont un budget dédié et génèrent leurs transactions
-*Révisé le 2026-10-15.*
-**Contexte :** la décision initiale (un abonnement réserve son montant dans le budget de sa catégorie, sans transaction) faisait que l'argent ne sortait jamais du courant à la transition : l'épargne calculée était surestimée.
-**Décision :** tous les abonnements sont dans la catégorie « Abonnements », dont l'alloué = somme des abonnements actifs. Une tâche pg_cron quotidienne crée une `depense` le `billing_day` de chaque mois (dernier jour du mois si ce jour n'existe pas).
-**Conséquence :** les abonnements suivent le cycle normal des dépenses (non réglées puis réglées à `close_month`). La génération doit être idempotente (unique `subscription_id, date`).
+# 003 — Les abonnements génèrent leurs transactions, dans le budget de leur choix
+*Révisé le 2026-10-15, puis le 2026-10-17.*
+**Contexte :** la décision initiale (un abonnement réserve son montant dans le budget de sa catégorie, sans transaction) faisait que l'argent ne sortait jamais du courant à la transition : l'épargne calculée était surestimée. La révision du 15 octobre rangeait tous les abonnements dans « Abonnements » ; un prélèvement comme une assurance moto y était mal classé.
+**Décision :** une tâche pg_cron quotidienne crée une `depense` le `billing_day` de chaque mois (dernier jour du mois si ce jour n'existe pas), dans le budget choisi pour l'abonnement (« Abonnements » par défaut). L'alloué d'« Abonnements » = somme de ses abonnements actifs ; chaque budget réserve ses abonnements pas encore prélevés du mois.
+**Conséquence :** les abonnements suivent le cycle normal des dépenses (non réglées puis réglées à `close_month`). La génération est idempotente (unique `subscription_id, date`, `last_charge_date`).

@@ -209,7 +209,10 @@ class _ProjectionCard extends StatelessWidget {
               ),
             const SizedBox(height: 8),
             Text(
-              'Si tu épuises tes budgets : ${_savings(s.projectedSavingsBudgets)}',
+              s.budgetRemaining > 0
+                  ? 'Si tu dépenses les ${euro(s.budgetRemaining)} restants '
+                        'de tes budgets : ${_savings(s.projectedSavingsBudgets)}'
+                  : 'Budgets entièrement dépensés',
               style: theme.textTheme.bodyMedium?.copyWith(color: onColor),
             ),
             const SizedBox(height: 4),

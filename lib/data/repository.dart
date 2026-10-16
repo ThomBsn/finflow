@@ -202,12 +202,14 @@ class FinflowRepository {
     required double amount,
     required int billingDay,
     required bool active,
+    required String category,
   }) async {
     final values = {
       'name': name,
       'amount': amount,
       'billing_day': billingDay,
       'active': active,
+      'category': category,
     };
     if (id == null) {
       await _db.from('subscriptions').insert(values);

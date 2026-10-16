@@ -84,6 +84,7 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | name | text | |
 | amount | numeric | > 0 |
 | billing_day | int | 1–31 ; ramené au dernier jour du mois si besoin |
+| category | text | budget du prélèvement, défaut « Abonnements » ; suit le renommage du budget, revient à « Abonnements » s'il est supprimé |
 | last_charge_date | date | dernier prélèvement généré : un par mois au plus, jamais recréé |
 | active | bool | |
 
@@ -130,7 +131,7 @@ Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne
 
 ## Vues
 - `budget_lines_current_month` (security invoker) : par budget, chaque contribution du mois `pending` au consommé → dépense (+), revenu (−), ou mensualité d'une dépense étalée (`installment_number` / `installments`)
-- `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme des abonnements actifs), dépensé (Σ des lignes), reste
+- `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme de ses abonnements actifs), dépensé (Σ des lignes), reste, `reserved` (abonnements de la catégorie pas encore prélevés ce mois-ci)
 - `settlement_flows` (security invoker) : par mois clôturé, chaque flux entrant (solde de départ, salaire, autres revenus, découvert final) et sortant (dépenses par catégorie, compte commun, épargne par projet, courant restant, découvert comblé) ; Σ entrées = Σ sorties
 - `installment_plans_status` (security invoker) : par dépense étalée → mensualité, rang au mois en cours, mensualités restantes, montant restant à imputer
 - `current_month_summary` (security invoker) : mois en cours, soldes, dépenses − revenus non réglés (ce que réglera la transition), marge, salaire et virement commun habituels (`settings`, sinon ceux du mois en cours), reste des budgets, `projected_savings` (épargne prévue à la clôture) et `projected_savings_budgets` (si budgets épuisés) — base du widget

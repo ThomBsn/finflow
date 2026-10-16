@@ -158,7 +158,7 @@ class _BudgetFormState extends ConsumerState<BudgetForm> {
                 allowZero: true,
                 enabled: !_computedAmount && !_horsBudget,
                 helperText: _computedAmount
-                    ? 'Calculé : somme des abonnements actifs'
+                    ? 'Calculé : somme des abonnements rangés dans ce budget'
                     : null,
               ),
               const SizedBox(height: 16),

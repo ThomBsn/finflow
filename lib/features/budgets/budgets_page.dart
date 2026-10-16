@@ -142,9 +142,8 @@ class _BudgetCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  over
-                      ? 'Dépassement de ${euro(-remaining)}'
-                      : 'Reste ${euro(remaining)}',
+                  '${over ? 'Dépassement de ${euro(-remaining)}' : 'Reste ${euro(remaining)}'}'
+                  '${(s?.reserved ?? 0) > 0 ? ' · dont ${euro(s!.reserved)} d\'abonnements à venir' : ''}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: over ? theme.colorScheme.error : null,
                   ),

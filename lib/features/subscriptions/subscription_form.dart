@@ -34,6 +34,7 @@ class _SubscriptionFormState extends ConsumerState<SubscriptionForm> {
   late final TextEditingController _amount;
   late final TextEditingController _day;
   late bool _active;
+  late String _category;
   bool _saving = false;
   String? _error;
 
@@ -51,6 +52,7 @@ class _SubscriptionFormState extends ConsumerState<SubscriptionForm> {
       text: '${s?.billingDay ?? DateTime.now().day}',
     );
     _active = s?.active ?? true;
+    _category = s?.category ?? Subscription.defaultCategory;
   }
 
   @override
@@ -88,6 +90,7 @@ class _SubscriptionFormState extends ConsumerState<SubscriptionForm> {
             amount: parseAmount(_amount.text)!,
             billingDay: int.parse(_day.text),
             active: _active,
+            category: _category,
           ),
     );
   }
@@ -142,6 +145,30 @@ class _SubscriptionFormState extends ConsumerState<SubscriptionForm> {
               ),
               const SizedBox(height: 16),
               AmountField(controller: _amount, label: 'Montant mensuel'),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _category,
+                decoration: const InputDecoration(
+                  labelText: 'Budget',
+                  helperText:
+                      'Le prélèvement compte dans ce budget, qui le réserve '
+                      'd\'avance chaque mois',
+                  helperMaxLines: 2,
+                ),
+                isExpanded: true,
+                items: [
+                  for (final category in {
+                    Subscription.defaultCategory,
+                    _category,
+                    ...?ref
+                        .watch(budgetsProvider)
+                        .value
+                        ?.map((b) => b.category),
+                  })
+                    DropdownMenuItem(value: category, child: Text(category)),
+                ],
+                onChanged: (c) => setState(() => _category = c!),
+              ),
               const SizedBox(height: 16),
               DayOfMonthField(
                 controller: _day,

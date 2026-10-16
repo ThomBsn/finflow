@@ -37,7 +37,7 @@ class SubscriptionsTab extends ConsumerWidget {
                   title: const Text('Total mensuel'),
                   subtitle: Text(
                     '${active.length} actif${active.length > 1 ? 's' : ''} · '
-                    'alloué du budget Abonnements',
+                    'prélevés automatiquement',
                   ),
                   trailing: Text(
                     euro(total),
@@ -81,7 +81,9 @@ class _SubscriptionTile extends StatelessWidget {
       ),
       title: Text(s.name, style: TextStyle(color: muted)),
       subtitle: Text(
-        s.active ? 'Le ${s.billingDay} du mois' : 'Suspendu',
+        s.active
+            ? 'Le ${s.billingDay} du mois · ${s.category}'
+            : 'Suspendu · ${s.category}',
         style: TextStyle(color: muted),
       ),
       trailing: Text(

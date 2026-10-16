@@ -75,6 +75,7 @@ class BudgetStatus {
     required this.allocated,
     required this.spent,
     required this.remaining,
+    required this.reserved,
   });
 
   factory BudgetStatus.fromJson(Json json) => BudgetStatus(
@@ -85,6 +86,7 @@ class BudgetStatus {
     allocated: _money(json['allocated']),
     spent: _money(json['spent']),
     remaining: _money(json['remaining']),
+    reserved: _money(json['reserved']),
   );
 
   final String id;
@@ -94,6 +96,9 @@ class BudgetStatus {
   final double allocated;
   final double spent;
   final double remaining;
+
+  /// Abonnements de la catégorie pas encore prélevés ce mois-ci.
+  final double reserved;
 }
 
 class Transaction {
@@ -271,12 +276,14 @@ class Subscription {
     required this.amount,
     required this.billingDay,
     required this.active,
+    this.category = Subscription.defaultCategory,
     this.lastChargeDate,
   });
 
   factory Subscription.fromJson(Json json) => Subscription(
     id: json['id'] as String,
     name: json['name'] as String,
+    category: json['category'] as String,
     amount: _money(json['amount']),
     billingDay: json['billing_day'] as int,
     active: json['active'] as bool,
@@ -290,7 +297,12 @@ class Subscription {
   final double amount;
   final int billingDay;
   final bool active;
+
+  /// Budget du prélèvement (ex. assurance moto → Véhicule).
+  final String category;
   final DateTime? lastChargeDate;
+
+  static const defaultCategory = 'Abonnements';
 
   /// Prochain prélèvement à partir de [today] : jour ramené en fin de mois,
   /// mois suivant si celui de [today] est déjà prélevé ou passé.

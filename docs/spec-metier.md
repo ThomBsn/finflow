@@ -69,9 +69,10 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 - Le mois affiché est le mois en cours (`pending`), pas le mois calendaire.
 - Consommé du mois = dépenses − revenus de la catégorie sur le mois, **hors `hors_budget`** (un budget lui-même hors budget, comme Frais externes, affiche ses propres dépenses sans enveloppe).
 - Renommer un budget renomme aussi ses transactions. « Abonnements » et « Frais externes » sont utilisés par l'app : ni renommables ni supprimables.
-- **Abonnements** : tous dans la catégorie unique **« Abonnements »** (budget créé par le seed).
-  - Alloué du budget = somme des `amount` des abonnements actifs (calculé, non saisi).
-  - Le jour `billing_day` de chaque mois, une tâche planifiée crée une `depense` (catégorie Abonnements, `settled = false`, `subscription_id` renseigné). Si ce jour n'existe pas dans le mois (ex. 31 en février), on prend le dernier jour du mois.
+- **Abonnements** (prélèvements automatiques à montant fixe) : chacun est rangé dans un budget, **« Abonnements »** par défaut (ex. assurance moto → Véhicule).
+  - Alloué du budget « Abonnements » = somme de ses abonnements actifs (calculé, non saisi) ; les autres budgets gardent leur montant saisi.
+  - Chaque budget **réserve** les abonnements de sa catégorie pas encore prélevés ce mois-ci ; l'épargne prévue « budgets épuisés » les compte même si l'enveloppe est trop petite.
+  - Le jour `billing_day` de chaque mois, une tâche planifiée crée une `depense` (catégorie et « hors budget » de son budget, `settled = false`, `subscription_id` renseigné). Si ce jour n'existe pas dans le mois (ex. 31 en février), on prend le dernier jour du mois.
   - Au plus un prélèvement par abonnement et par mois ; un prélèvement supprimé n'est pas recréé, et un abonnement créé après son jour de prélèvement démarre le mois suivant.
   - Ces dépenses comptent dans le consommé du budget Abonnements.
   - Création, modification et suppression depuis l'onglet Abonnements de la page Dépenses.

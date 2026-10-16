@@ -96,9 +96,8 @@ class BudgetDetailSheet extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            over
-                ? 'Dépassement de ${euro(-s.remaining)}'
-                : 'Reste ${euro(s.remaining)}',
+            '${over ? 'Dépassement de ${euro(-s.remaining)}' : 'Reste ${euro(s.remaining)}'}'
+            '${s.reserved > 0 ? ' · dont ${euro(s.reserved)} d\'abonnements à venir' : ''}',
             style: theme.textTheme.bodySmall?.copyWith(
               color: over ? theme.colorScheme.error : null,
             ),
