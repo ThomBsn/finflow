@@ -1,0 +1,11 @@
+:80 {
+	root * /srv
+	encode zstd gzip
+
+	# index.html et le service worker ne doivent jamais rester en cache,
+	# sinon une mise à jour n'apparaît qu'au second chargement.
+	@entry path / /index.html /flutter_service_worker.js /version.json
+	header @entry Cache-Control "no-cache"
+
+	file_server
+}

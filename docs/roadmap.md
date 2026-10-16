@@ -46,7 +46,7 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 - [ ] Pages Budgets, Épargne
 - [ ] Distribution : historique + Sankey
 - [ ] Reprise des données Base44 : à la main dans l'app (dépenses, budgets, projets)
-- [ ] Mise en production : projet Supabase Cloud (migrations + job pg_cron), web servi par un conteneur sur le serveur perso, APK release sur le téléphone
+- [x] Mise en production : projet Supabase Cloud (migrations + job pg_cron), web servi par un conteneur sur le serveur perso (tailnet), APK release sur le téléphone
 **Fin :** l'app remplace Base44 au quotidien.
 
 ## Lot 6 — Bonus

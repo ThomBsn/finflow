@@ -1,0 +1,14 @@
+# Version web de FinFlow sur le VPS (docs/decisions/007-hebergement.md).
+# Caddy sert le build Flutter sur 127.0.0.1 uniquement : rien n'est exposé
+# sur internet, `tailscale serve` publie le site en HTTPS sur le tailnet.
+services:
+  finflow-web:
+    image: caddy:2.10-alpine
+    container_name: finflow-web
+    restart: unless-stopped
+    command: caddy run --config /etc/caddy/Caddyfile
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv:ro
+    ports:
+      - "127.0.0.1:8081:80"

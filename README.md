@@ -48,3 +48,13 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 ```
 
 Le Supabase local ne sert plus qu'au développement : les vraies données sont dans le cloud.
+
+## Version web (VPS, tailnet uniquement)
+
+Servie par Caddy sur le VPS (`deploy/web/`), publiée par `tailscale serve` sur
+https://oracle.tail7f1a74.ts.net — accessible seulement depuis un appareil connecté à Tailscale.
+
+```sh
+deploy/web/deploy.sh   # build web (env/prod.json) + rsync + docker compose up
+```
+
