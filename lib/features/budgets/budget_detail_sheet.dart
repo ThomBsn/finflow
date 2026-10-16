@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import 'budget_form.dart';
+import 'budget_gauge.dart';
 
 Future<void> showBudgetDetail(
   BuildContext context, {
@@ -86,14 +87,7 @@ class BudgetDetailSheet extends ConsumerWidget {
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: s.allocated > 0
-                ? (s.spent / s.allocated).clamp(0, 1).toDouble()
-                : (s.spent > 0 ? 1 : 0),
-            color: over ? theme.colorScheme.error : null,
-            minHeight: 8,
-            borderRadius: BorderRadius.circular(4),
-          ),
+          BudgetGauge(status: s, height: 8, legend: true),
           const SizedBox(height: 8),
           Text(
             '${over ? 'Dépassement de ${euro(-s.remaining)}' : 'Reste ${euro(s.remaining)}'}'

@@ -61,6 +61,7 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 - **Mode `precis`** : tout va au projet choisi (`savings_project_id`).
 - **Versement manuel** (« Épargner maintenant », RPC `save_to_savings`) : débite le courant tout de suite, en mode automatique ou précis.
 - **Nouveau projet** : un montant « déjà épargné » peut être repris (projet existant ailleurs) ; il crédite le compte épargne sans toucher au courant.
+- **Correction du montant** d'un projet (y compris Fond de sécurité et Épargne générale), pour le caler sur la banque : le compte épargne suit, le courant ne bouge pas. Chaque projet a une icône.
 - **Débordement en cascade** (dans les deux modes) : si un projet atteint `target_amount`, l'excédent va au **Fond de sécurité** ; s'il est plein, à **Épargne générale** (sans plafond).
 - Invariant : solde du compte épargne = somme des `current_amount` des projets.
 
@@ -80,6 +81,7 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
   - L'argent sort en une fois : la dépense entière est déduite du courant à la clôture de son mois (aucun effet sur le solde ni sur l'épargne).
   - Le budget de sa catégorie ne compte qu'une mensualité par mois pendant N mois à partir du mois de la dépense : montant / N tronqué au centime, reliquat sur la dernière.
   - Activé depuis la dépense (« Étaler sur le budget »), uniquement pour une dépense comptée dans un budget (ni revenu, ni hors budget). Modifier la dépense met l'étalement à jour ; la supprimer le supprime ; « ne plus étaler » la fait compter en entier dans son mois.
+- **Jauge d'un budget** : mensualités d'étalement (orange, déjà engagées), autres dépenses (bleu), abonnements à venir (vert d'eau), puis le disponible ; au-delà de l'enveloppe, un trait marque l'alloué.
 - **Composition d'un budget** : pour le mois en cours, chaque dépense, revenu déduit ou mensualité qui compose le consommé, avec sa part de l'enveloppe.
 
 ## 7. Hors budget

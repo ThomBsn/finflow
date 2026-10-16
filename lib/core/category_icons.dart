@@ -22,6 +22,16 @@ const categoryIcons = <String, IconData>{
   'bolt': Icons.bolt,
   'checkroom': Icons.checkroom,
   'local_cafe': Icons.local_cafe,
+  'two_wheeler': Icons.two_wheeler,
+  'build': Icons.build,
+  'beach_access': Icons.beach_access,
+  'celebration': Icons.celebration,
+  'laptop': Icons.laptop,
+  'favorite': Icons.favorite,
+  'savings': Icons.savings,
+  'flag': Icons.flag,
+  'shield': Icons.shield,
+  'account_balance': Icons.account_balance,
   'category': Icons.category,
 };
 

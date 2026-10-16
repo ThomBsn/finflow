@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/category_icons.dart';
 import '../../core/errors.dart';
 import '../../core/format.dart';
 import '../../core/widgets/amount_field.dart';
+import '../../core/widgets/icon_picker.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 
@@ -162,24 +162,9 @@ class _BudgetFormState extends ConsumerState<BudgetForm> {
                     : null,
               ),
               const SizedBox(height: 16),
-              Text('Icône', style: theme.textTheme.labelLarge),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  for (final entry in categoryIcons.entries)
-                    IconButton(
-                      isSelected: entry.key == _icon,
-                      icon: Icon(entry.value),
-                      style: IconButton.styleFrom(
-                        backgroundColor: entry.key == _icon
-                            ? theme.colorScheme.primaryContainer
-                            : null,
-                      ),
-                      onPressed: () => setState(() => _icon = entry.key),
-                    ),
-                ],
+              IconPicker(
+                selected: _icon,
+                onChanged: (icon) => setState(() => _icon = icon),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

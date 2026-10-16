@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/category_icons.dart';
 import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
@@ -119,12 +120,7 @@ class _ProjectCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    p.isSafetyFund
-                        ? Icons.shield
-                        : (p.isDefault ? Icons.account_balance : Icons.flag),
-                    color: theme.colorScheme.primary,
-                  ),
+                  Icon(categoryIcon(p.icon), color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(p.name, style: theme.textTheme.titleMedium),

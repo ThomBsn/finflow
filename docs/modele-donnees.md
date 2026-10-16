@@ -77,6 +77,7 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | current_amount | numeric | ≥ 0 |
 | is_default | bool | Épargne générale, un seul (index unique partiel) ; pourcentage 0 et sans plafond |
 | is_safety_fund | bool | Fond de sécurité, un seul (index unique partiel) |
+| icon | text | nom d'icône (mêmes noms que les budgets) |
 
 ## subscriptions
 | Champ | Type | Note |
@@ -115,8 +116,9 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | `close_month(p_month, p_salary, p_shared_transfer, p_special_month)` | Transition complète (spec §3) ; renvoie totaux et solde courant |
 | `preview_close_month(p_salary, p_shared_transfer, p_special_month)` | Aperçu de la transition sans écriture, mêmes formules (testé contre `close_month`) |
 | `rebalance_from_safety_fund()` | Ramène le courant vers 0 depuis le Fond de sécurité, retrait partiel si insuffisant ; renvoie montant retiré et reste à couvrir (spec §4) |
-| `create_savings_project(p_name, p_percentage, p_target, p_initial_amount)` | Crée un projet, avec reprise d'un montant déjà épargné |
+| `create_savings_project(p_name, p_percentage, p_target, p_initial_amount, p_icon)` | Crée un projet, avec reprise d'un montant déjà épargné |
 | `save_to_savings(p_amount, p_mode, p_project_id)` | Versement manuel du courant vers l'épargne |
+| `adjust_savings_project(p_project_id, p_amount)` | Correction du montant d'un projet (recalage sur la banque) : le compte épargne suit, le courant ne bouge pas |
 | `private.distribute_savings(p_user, p_amount, p_mode, p_project_id, p_date)` | Interne : vire du courant vers l'épargne et répartit (spec §5) ; appelée par `close_month` et la future saisie manuelle |
 | `private.generate_subscription_charges(p_date)` | Interne, tous utilisateurs : crée les prélèvements dus du mois de `p_date` et du mois précédent, jamais avant la création de l'abonnement ; idempotent via l'index unique |
 | `complete_onboarding(p_courant, p_safety_fund, p_general_savings)` | Soldes de départ, ouvre le mois en cours ; une seule fois (spec §9) |
@@ -131,7 +133,7 @@ Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne
 
 ## Vues
 - `budget_lines_current_month` (security invoker) : par budget, chaque contribution du mois `pending` au consommé → dépense (+), revenu (−), ou mensualité d'une dépense étalée (`installment_number` / `installments`)
-- `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme de ses abonnements actifs), dépensé (Σ des lignes), reste, `reserved` (abonnements de la catégorie pas encore prélevés ce mois-ci)
+- `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme de ses abonnements actifs), dépensé (Σ des lignes), reste, `reserved` (abonnements de la catégorie pas encore prélevés ce mois-ci), `installment_spent` (part du dépensé due aux mensualités d'étalement)
 - `settlement_flows` (security invoker) : par mois clôturé, chaque flux entrant (solde de départ, salaire, autres revenus, découvert final) et sortant (dépenses par catégorie, compte commun, épargne par projet, courant restant, découvert comblé) ; Σ entrées = Σ sorties
 - `installment_plans_status` (security invoker) : par dépense étalée → mensualité, rang au mois en cours, mensualités restantes, montant restant à imputer
 - `current_month_summary` (security invoker) : mois en cours, soldes, dépenses − revenus non réglés (ce que réglera la transition), marge, salaire et virement commun habituels (`settings`, sinon ceux du mois en cours), reste des budgets, `projected_savings` (épargne prévue à la clôture) et `projected_savings_budgets` (si budgets épuisés) — base du widget

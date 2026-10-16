@@ -5,6 +5,7 @@ import '../../core/errors.dart';
 import '../../core/format.dart';
 import '../../core/widgets/amount_field.dart';
 import '../../core/widgets/confirm_dialog.dart';
+import '../../core/widgets/icon_picker.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 
@@ -31,7 +32,8 @@ class _ProjectFormState extends ConsumerState<ProjectForm> {
   late final TextEditingController _name;
   late final TextEditingController _percentage;
   late final TextEditingController _target;
-  final _initial = TextEditingController(text: '0');
+  late final TextEditingController _amount;
+  late String _icon;
   bool _saving = false;
   String? _error;
 
@@ -50,6 +52,8 @@ class _ProjectFormState extends ConsumerState<ProjectForm> {
     _target = TextEditingController(
       text: p?.targetAmount == null ? '' : amountInput(p!.targetAmount!),
     );
+    _amount = TextEditingController(text: amountInput(p?.currentAmount ?? 0));
+    _icon = p?.icon ?? 'flag';
   }
 
   @override
@@ -57,7 +61,7 @@ class _ProjectFormState extends ConsumerState<ProjectForm> {
     _name.dispose();
     _percentage.dispose();
     _target.dispose();
-    _initial.dispose();
+    _amount.dispose();
     super.dispose();
   }
 
@@ -86,22 +90,31 @@ class _ProjectFormState extends ConsumerState<ProjectForm> {
     final name = _name.text.trim();
     final percentage = _isDefault ? 0.0 : parseAmount(_percentage.text)!;
     final target = _isDefault ? null : _targetValue;
+    final amount = parseAmount(_amount.text)!;
 
-    await _run(
-      () => _isNew
-          ? repo.createSavingsProject(
-              name: name,
-              percentage: percentage,
-              target: target,
-              initialAmount: parseAmount(_initial.text)!,
-            )
-          : repo.updateSavingsProject(
-              id: _project!.id,
-              name: name,
-              percentage: percentage,
-              target: target,
-            ),
-    );
+    await _run(() async {
+      if (_isNew) {
+        await repo.createSavingsProject(
+          name: name,
+          percentage: percentage,
+          target: target,
+          initialAmount: amount,
+          icon: _icon,
+        );
+        return;
+      }
+      final p = _project!;
+      await repo.updateSavingsProject(
+        id: p.id,
+        name: name,
+        percentage: percentage,
+        target: target,
+        icon: _icon,
+      );
+      if (amount != p.currentAmount) {
+        await repo.adjustSavingsProject(p.id, amount);
+      }
+    });
   }
 
   Future<void> _delete() async {
@@ -199,17 +212,22 @@ class _ProjectFormState extends ConsumerState<ProjectForm> {
                             : null;
                       },
               ),
-              if (_isNew) ...[
-                const SizedBox(height: 16),
-                AmountField(
-                  controller: _initial,
-                  label: 'Déjà épargné',
-                  allowZero: true,
-                  helperText:
-                      'Pour reprendre un projet existant : ajouté au compte '
-                      'épargne sans toucher au compte courant.',
-                ),
-              ],
+              const SizedBox(height: 16),
+              AmountField(
+                controller: _amount,
+                label: _isNew ? 'Déjà épargné' : 'Montant actuel',
+                allowZero: true,
+                helperText: _isNew
+                    ? 'Pour reprendre un projet existant : ajouté au compte '
+                          'épargne sans toucher au compte courant.'
+                    : 'Correction, pour caler le projet sur ta banque : le '
+                          'compte épargne suit, le compte courant ne bouge pas.',
+              ),
+              const SizedBox(height: 16),
+              IconPicker(
+                selected: _icon,
+                onChanged: (icon) => setState(() => _icon = icon),
+              ),
               if (p != null && !p.isSystem && p.currentAmount > 0)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),

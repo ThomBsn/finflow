@@ -282,6 +282,7 @@ class FinflowRepository {
     required double percentage,
     required double? target,
     required double initialAmount,
+    required String icon,
   }) => _db.rpc<void>(
     'create_savings_project',
     params: {
@@ -289,6 +290,7 @@ class FinflowRepository {
       'p_percentage': percentage,
       'p_target': target,
       'p_initial_amount': initialAmount,
+      'p_icon': icon,
     },
   );
 
@@ -297,10 +299,23 @@ class FinflowRepository {
     required String name,
     required double percentage,
     required double? target,
+    required String icon,
   }) => _db
       .from('savings_projects')
-      .update({'name': name, 'percentage': percentage, 'target_amount': target})
+      .update({
+        'name': name,
+        'percentage': percentage,
+        'target_amount': target,
+        'icon': icon,
+      })
       .eq('id', id);
+
+  /// Corrige le montant d'un projet (recalage sur la banque) : le compte
+  /// épargne suit, le courant ne bouge pas.
+  Future<void> adjustSavingsProject(String id, double amount) => _db.rpc<void>(
+    'adjust_savings_project',
+    params: {'p_project_id': id, 'p_amount': amount},
+  );
 
   /// La RLS ne laisse supprimer qu'un projet vide et non système.
   Future<void> deleteSavingsProject(String id) async {

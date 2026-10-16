@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../core/chart_colors.dart';
 import '../../core/format.dart';
 import '../../data/models.dart';
 
@@ -10,16 +11,12 @@ import '../../data/models.dart';
 /// orange = dépenses, vert d'eau = épargne ; gris neutre étiqueté pour le
 /// compte commun et les soldes.
 Color flowColor(FlowKind kind, Brightness brightness) {
-  final dark = brightness == Brightness.dark;
+  final colors = ChartColors.of(brightness);
   return switch (kind) {
-    FlowKind.opening ||
-    FlowKind.salary ||
-    FlowKind.income => dark ? const Color(0xFF3987E5) : const Color(0xFF2A78D6),
-    FlowKind.expense =>
-      dark ? const Color(0xFFD95926) : const Color(0xFFEB6834),
-    FlowKind.savings =>
-      dark ? const Color(0xFF199E70) : const Color(0xFF1BAF7A),
-    _ => dark ? const Color(0xFF7A7974) : const Color(0xFF9B9A94),
+    FlowKind.opening || FlowKind.salary || FlowKind.income => colors.blue,
+    FlowKind.expense => colors.orange,
+    FlowKind.savings => colors.aqua,
+    _ => colors.neutral,
   };
 }
 

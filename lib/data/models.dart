@@ -76,6 +76,7 @@ class BudgetStatus {
     required this.spent,
     required this.remaining,
     required this.reserved,
+    required this.installmentSpent,
   });
 
   factory BudgetStatus.fromJson(Json json) => BudgetStatus(
@@ -87,6 +88,7 @@ class BudgetStatus {
     spent: _money(json['spent']),
     remaining: _money(json['remaining']),
     reserved: _money(json['reserved']),
+    installmentSpent: _money(json['installment_spent']),
   );
 
   final String id;
@@ -99,6 +101,9 @@ class BudgetStatus {
 
   /// Abonnements de la catégorie pas encore prélevés ce mois-ci.
   final double reserved;
+
+  /// Part du dépensé due aux mensualités d'étalement (déjà engagée).
+  final double installmentSpent;
 }
 
 class Transaction {
@@ -425,6 +430,7 @@ class SavingsProject {
     required this.currentAmount,
     required this.isDefault,
     required this.isSafetyFund,
+    this.icon = 'flag',
   });
 
   factory SavingsProject.fromJson(Json json) => SavingsProject(
@@ -437,6 +443,7 @@ class SavingsProject {
     currentAmount: _money(json['current_amount']),
     isDefault: json['is_default'] as bool,
     isSafetyFund: json['is_safety_fund'] as bool,
+    icon: json['icon'] as String,
   );
 
   final String id;
@@ -450,6 +457,9 @@ class SavingsProject {
 
   /// Fond de sécurité : reçoit les excédents, sert au rééquilibrage.
   final bool isSafetyFund;
+
+  /// Nom d'icône (voir `categoryIcons`).
+  final String icon;
 
   bool get isSystem => isDefault || isSafetyFund;
   bool get isFull => targetAmount != null && currentAmount >= targetAmount!;

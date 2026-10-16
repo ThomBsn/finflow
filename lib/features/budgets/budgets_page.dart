@@ -6,6 +6,7 @@ import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import 'budget_detail_sheet.dart';
+import 'budget_gauge.dart';
 import 'budget_form.dart';
 
 /// Page Budgets : alloué / dépensé / reste du mois en cours.
@@ -132,14 +133,17 @@ class _BudgetCard extends StatelessWidget {
               ),
               if (!horsBudget) ...[
                 const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: allocated > 0
-                      ? (spent / allocated).clamp(0, 1).toDouble()
-                      : (spent > 0 ? 1 : 0),
-                  color: over ? theme.colorScheme.error : null,
-                  minHeight: 6,
-                  borderRadius: BorderRadius.circular(3),
-                ),
+                if (s != null)
+                  BudgetGauge(status: s)
+                else
+                  LinearProgressIndicator(
+                    value: allocated > 0
+                        ? (spent / allocated).clamp(0, 1).toDouble()
+                        : (spent > 0 ? 1 : 0),
+                    color: over ? theme.colorScheme.error : null,
+                    minHeight: 6,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 const SizedBox(height: 8),
                 Text(
                   '${over ? 'Dépassement de ${euro(-remaining)}' : 'Reste ${euro(remaining)}'}'

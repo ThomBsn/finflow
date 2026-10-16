@@ -7,6 +7,7 @@ import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
 import '../budgets/budget_detail_sheet.dart';
+import '../budgets/budget_gauge.dart';
 import '../transactions/transaction_form.dart';
 
 /// Carte de section du Dashboard : titre, lien « Tout voir », contenu.
@@ -145,9 +146,6 @@ class _BudgetRow extends StatelessWidget {
     final theme = Theme.of(context);
     final s = status;
     final over = s.remaining < 0;
-    final ratio = s.allocated > 0
-        ? (s.spent / s.allocated).clamp(0, 1).toDouble()
-        : 1.0;
 
     return InkWell(
       onTap: onTap,
@@ -171,12 +169,7 @@ class _BudgetRow extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            LinearProgressIndicator(
-              value: ratio,
-              color: over ? theme.colorScheme.error : null,
-              minHeight: 5,
-              borderRadius: BorderRadius.circular(3),
-            ),
+            BudgetGauge(status: s, height: 5),
           ],
         ),
       ),
@@ -389,6 +382,8 @@ class SavingsSection extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
+                        Icon(categoryIcon(p.icon), size: 18),
+                        const SizedBox(width: 8),
                         Expanded(child: Text(p.name)),
                         Text(
                           savingsProgress(p.currentAmount, p.targetAmount),
