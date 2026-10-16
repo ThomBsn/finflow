@@ -425,3 +425,75 @@ class SavingsProject {
   bool get isSystem => isDefault || isSafetyFund;
   bool get isFull => targetAmount != null && currentAmount >= targetAmount!;
 }
+
+/// Mois clôturé (`monthly_settlements` réglé).
+class ClosedMonth {
+  const ClosedMonth({
+    required this.id,
+    required this.month,
+    required this.totalExpenses,
+    required this.totalSavings,
+    required this.specialMonth,
+    required this.closingBalance,
+  });
+
+  factory ClosedMonth.fromJson(Json json) => ClosedMonth(
+    id: json['id'] as String,
+    month: _date(json['month']),
+    totalExpenses: _money(json['total_expenses']),
+    totalSavings: _money(json['total_savings']),
+    specialMonth: json['special_month'] as bool,
+    closingBalance: json['closing_balance'] == null
+        ? null
+        : _money(json['closing_balance']),
+  );
+
+  final String id;
+  final DateTime month;
+  final double totalExpenses;
+  final double totalSavings;
+  final bool specialMonth;
+
+  /// Null pour une clôture antérieure au suivi des flux.
+  final double? closingBalance;
+}
+
+enum FlowKind {
+  opening,
+  salary,
+  income,
+  overdraft,
+  expense,
+  shared,
+  savings,
+  remaining,
+  openingOverdraft;
+
+  static FlowKind parse(String value) => switch (value) {
+    'opening_overdraft' => openingOverdraft,
+    _ => values.byName(value),
+  };
+}
+
+/// Ligne de la vue `settlement_flows` : un flux d'une clôture.
+class SettlementFlow {
+  const SettlementFlow({
+    required this.incoming,
+    required this.kind,
+    required this.label,
+    required this.amount,
+  });
+
+  factory SettlementFlow.fromJson(Json json) => SettlementFlow(
+    incoming: json['side'] == 'in',
+    kind: FlowKind.parse(json['kind'] as String),
+    label: json['label'] as String,
+    amount: _money(json['amount']),
+  );
+
+  /// Entrée (d'où vient l'argent) ou sortie (où il est allé).
+  final bool incoming;
+  final FlowKind kind;
+  final String label;
+  final double amount;
+}

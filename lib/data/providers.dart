@@ -76,6 +76,17 @@ final budgetLinesProvider = FutureProvider.family<List<BudgetLine>, String>((
   return ref.watch(repositoryProvider).budgetLines(budgetId);
 });
 
+final closedMonthsProvider = FutureProvider<List<ClosedMonth>>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).closedMonths();
+});
+
+final settlementFlowsProvider =
+    FutureProvider.family<List<SettlementFlow>, String>((ref, settlementId) {
+      _watchUser(ref);
+      return ref.watch(repositoryProvider).settlementFlows(settlementId);
+    });
+
 /// À appeler après toute écriture : transactions, budgets, abonnements,
 /// échelonnements ou épargne (tout peut changer le résumé du mois).
 void invalidateMonthData(WidgetRef ref) {
@@ -95,4 +106,5 @@ void invalidateAll(WidgetRef ref) {
   invalidateMonthData(ref);
   ref.invalidate(currentMonthProvider);
   ref.invalidate(monthsProvider);
+  ref.invalidate(closedMonthsProvider);
 }

@@ -63,6 +63,7 @@ Créées à l'inscription (trigger sur `auth.users` → `init_user_data`) : sett
 | settled | bool | défaut false |
 | savings_project_id | uuid → savings_projects | null |
 | subscription_id | uuid → subscriptions | null sauf prélèvement d'abonnement |
+| settlement_id | uuid → monthly_settlements | clôture qui a réglé ou créé la transaction (salaire, compte commun, épargne) |
 | distribution_mode | distribution_mode | null sauf `transfert_epargne` |
 
 Index : (user_id, month), (user_id, category, month), unique (subscription_id, date) — permet de rejouer la génération des prélèvements sans doublon.
@@ -103,6 +104,8 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | shared_transfer | numeric | |
 | total_expenses | numeric | |
 | total_savings | numeric | |
+| opening_balance | numeric | courant avant la clôture (null avant le lot 5) |
+| closing_balance | numeric | courant après la clôture |
 | special_month | bool | |
 
 ## RPC
@@ -128,5 +131,6 @@ Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne
 ## Vues
 - `budget_lines_current_month` (security invoker) : par budget, chaque contribution du mois `pending` au consommé → dépense (+), revenu (−), ou mensualité d'une dépense étalée (`installment_number` / `installments`)
 - `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme des abonnements actifs), dépensé (Σ des lignes), reste
+- `settlement_flows` (security invoker) : par mois clôturé, chaque flux entrant (solde de départ, salaire, autres revenus, découvert final) et sortant (dépenses par catégorie, compte commun, épargne par projet, courant restant, découvert comblé) ; Σ entrées = Σ sorties
 - `installment_plans_status` (security invoker) : par dépense étalée → mensualité, rang au mois en cours, mensualités restantes, montant restant à imputer
 - `current_month_summary` (security invoker) : mois en cours, soldes, dépenses − revenus non réglés (ce que réglera la transition), disponible estimé, marge, salaire et virement commun proposés pour la transition (ceux du mois en cours, sinon `settings`) — base du futur widget

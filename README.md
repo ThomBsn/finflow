@@ -33,11 +33,13 @@ Projet `ewesrsdeqiuimnvtmdrt` (« myfinance », région eu-central-1), lié au r
 La config client est dans `env/prod.json` (non versionné) : URL du projet + clé publishable
 (`supabase projects api-keys --project-ref ewesrsdeqiuimnvtmdrt`).
 
-Migrations : tester en local (`supabase test db`), puis
+Migrations : tester en local (`supabase test db`), puis pousser avec le mot de passe de la base,
+rangé dans le trousseau macOS (`security add-generic-password -s finflow-supabase-db -a postgres -w`) :
 
 ```sh
-supabase db push --linked --dry-run   # vérifier la liste
-supabase db push --linked
+PW=$(security find-generic-password -s finflow-supabase-db -a postgres -w)
+supabase db push --linked --dry-run -p "$PW"   # vérifier la liste
+supabase db push --linked -p "$PW"
 ```
 
 APK pour le téléphone (signé avec la clé de debug du Mac, suffisant hors Play Store) :

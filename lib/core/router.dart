@@ -7,6 +7,7 @@ import '../data/providers.dart';
 import '../features/auth/login_page.dart';
 import '../features/budgets/budgets_page.dart';
 import '../features/dashboard/dashboard_page.dart';
+import '../features/distribution/distribution_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/savings/savings_page.dart';
 import '../features/shell/app_shell.dart';
@@ -95,5 +96,6 @@ Widget _pageFor(AppDestination destination) => switch (destination.path) {
   '/depenses' => const TransactionsPage(),
   '/budgets' => const BudgetsPage(),
   '/epargne' => const SavingsPage(),
+  '/distribution' => const DistributionPage(),
   _ => PlaceholderPage(title: destination.label),
 };

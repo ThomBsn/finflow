@@ -100,4 +100,4 @@ Pas de salaire demandé : il est saisi dans la modale de transition. Ensuite, l'
 | Dépenses | Onglets transactions / abonnements (CRUD), filtres mois + catégorie |
 | Budgets | Alloué vs dépensé vs reste par catégorie |
 | Épargne | Projets, pourcentages, progression vers objectifs |
-| Distribution | Historique des clôtures, Sankey de répartition du salaire |
+| Distribution | Par mois clôturé : dépenses, épargne, courant ensuite ; Sankey « d'où vient / où est allé l'argent » (salaire, revenus, solde de départ → dépenses par catégorie, compte commun, épargne par projet, courant restant) et tableau des flux |

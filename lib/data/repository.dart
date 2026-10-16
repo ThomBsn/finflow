@@ -302,4 +302,27 @@ class FinflowRepository {
     'save_to_savings',
     params: {'p_amount': amount, 'p_mode': mode.db, 'p_project_id': projectId},
   );
+
+  // Distribution -----------------------------------------------------------
+
+  Future<List<ClosedMonth>> closedMonths() async {
+    final rows = await _db
+        .from('monthly_settlements')
+        .select(
+          'id, month, total_expenses, total_savings, special_month, '
+          'closing_balance',
+        )
+        .eq('status', 'settled')
+        .order('month', ascending: false);
+    return rows.map(ClosedMonth.fromJson).toList();
+  }
+
+  Future<List<SettlementFlow>> settlementFlows(String settlementId) async {
+    final rows = await _db
+        .from('settlement_flows')
+        .select('side, kind, label, amount')
+        .eq('settlement_id', settlementId)
+        .order('amount', ascending: false);
+    return rows.map(SettlementFlow.fromJson).toList();
+  }
 }
