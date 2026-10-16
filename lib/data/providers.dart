@@ -16,16 +16,28 @@ final userIdProvider = StreamProvider<String?>(
   ),
 );
 
-String? _watchUser(Ref ref) => ref.watch(userIdProvider.select((u) => u.value));
+/// Utilisateur connecté ; au démarrage, avant le premier événement du flux,
+/// la session déjà restaurée fait foi.
+String? _watchUser(Ref ref) =>
+    ref.watch(userIdProvider.select((u) => u.value)) ??
+    (ref.read(userIdProvider).isLoading
+        ? Supabase.instance.client.auth.currentUser?.id
+        : null);
 
 final currentMonthProvider = FutureProvider<DateTime?>((ref) {
   _watchUser(ref);
   return ref.watch(repositoryProvider).currentMonth();
 });
 
-final monthSummaryProvider = FutureProvider<MonthSummary?>((ref) {
-  _watchUser(ref);
+final monthSummaryProvider = FutureProvider<MonthSummary?>((ref) async {
+  // Écouté en permanence par le widget : rien à charger hors connexion.
+  if (_watchUser(ref) == null) return null;
   return ref.watch(repositoryProvider).monthSummary();
+});
+
+final settingsProvider = FutureProvider<Settings>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).settings();
 });
 
 final monthsProvider = FutureProvider<List<DateTime>>((ref) {

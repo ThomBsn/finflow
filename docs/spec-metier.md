@@ -9,7 +9,11 @@ Constante : `SAFETY_MARGIN = 200 €` (stockée dans `settings.safety_margin`).
 - L'utilisateur saisit dépenses et revenus. Une dépense a `settled = false` tant que le mois n'est pas clôturé.
 - Un **revenu** saisi en cours de mois (remboursement, prime…) vient **en déduction des dépenses** : il augmente d'autant l'épargne du mois.
 - Le solde affiché du compte courant ne bouge pas avec les dépenses.
-- Le dashboard affiche en plus un **« disponible estimé »** = solde courant − dépenses non réglées du mois.
+- Banque : carte à **débit différé**. Les dépenses carte du mois M sont prélevées en une fois le 3 de M+1, le salaire arrive vers le 27/28 de M ; la marge de 200 € n'absorbe que les prélèvements immédiats (abonnements). On clôture donc le mois **le 3**, une fois le débit différé passé.
+- Le dashboard et le widget affichent l'**épargne prévue** = ce que la prochaine clôture mettra de côté, recalculée à chaque saisie :
+  `courant + salaire habituel − virement commun habituel − dépenses non réglées − marge`.
+  Négative : aucune épargne et le courant passera sous la marge d'autant. Une seconde valeur suppose les budgets dépensés jusqu'au bout (reste des enveloppes, abonnements à venir compris).
+- Salaire et virement commun habituels se règlent dans **Réglages** (sinon ceux du mois en cours) et préremplissent la clôture.
 
 ## 3. Transition « Passer au mois suivant » (RPC `close_month`)
 Paramètres (préremplis depuis `settings`, modifiables dans la modale) :

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Disponible estimé</string>
+    <string name="widget_description">Disponible estimé du mois et soldes</string>
+    <!-- Couleurs de l'app (Material 3, graine #0F766E), thème clair. -->
+    <color name="widget_background">#FFD8F0EB</color>
+    <color name="widget_text">#FF00201C</color>
+    <color name="widget_text_secondary">#FF3F4947</color>
+</resources>

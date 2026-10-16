@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/errors.dart';
 import '../../core/format.dart';
@@ -30,9 +30,9 @@ class DashboardPage extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            tooltip: 'Se déconnecter',
-            icon: const Icon(Icons.logout),
-            onPressed: () => Supabase.instance.client.auth.signOut(),
+            tooltip: 'Réglages',
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/reglages'),
           ),
         ],
       ),
@@ -62,7 +62,7 @@ class DashboardPage extends ConsumerWidget {
                           _OverdraftAlert(summary: s),
                           const SizedBox(height: 12),
                         ],
-                        _AvailableCard(summary: s),
+                        _ProjectionCard(summary: s),
                         const SizedBox(height: 12),
                         Row(
                           children: [
@@ -135,17 +135,53 @@ class DashboardPage extends ConsumerWidget {
   }
 }
 
-class _AvailableCard extends StatelessWidget {
-  const _AvailableCard({required this.summary});
+/// Épargne prévue à la prochaine clôture, au rythme actuel et si les budgets
+/// sont épuisés. Négatif : rien d'épargné, le courant passera sous la marge.
+class _ProjectionCard extends StatelessWidget {
+  const _ProjectionCard({required this.summary});
 
   final MonthSummary summary;
+
+  String _savings(double value) =>
+      value >= 0 ? euro(value) : 'aucune (${euro(-value)} sous la marge)';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final s = summary;
-    final negative = s.available < 0;
+    final onColor = theme.colorScheme.onPrimaryContainer;
 
+    if (s.needsSalary) {
+      return Card(
+        color: theme.colorScheme.primaryContainer,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Épargne prévue',
+                style: theme.textTheme.labelLarge?.copyWith(color: onColor),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Renseigne ton salaire habituel pour voir, à chaque dépense, '
+                'ce que la prochaine clôture mettra de côté.',
+                style: TextStyle(color: onColor),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                onPressed: () => context.push('/reglages'),
+                icon: const Icon(Icons.settings),
+                label: const Text('Réglages'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final negative = s.projectedSavings < 0;
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
@@ -154,27 +190,35 @@ class _AvailableCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Disponible estimé',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
+              'Épargne prévue à la clôture',
+              style: theme.textTheme.labelLarge?.copyWith(color: onColor),
             ),
             const SizedBox(height: 8),
             Text(
-              euro(s.available),
+              euro(negative ? 0 : s.projectedSavings),
               style: theme.textTheme.displaySmall?.copyWith(
-                color: negative
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.onPrimaryContainer,
+                color: negative ? theme.colorScheme.error : onColor,
               ),
             ),
+            if (negative)
+              Text(
+                'Le courant passera ${euro(-s.projectedSavings)} sous la marge',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
             const SizedBox(height: 8),
             Text(
-              'Courant ${euro(s.courant)} − dépenses du mois '
-              '${euro(s.unsettledExpenses)}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
+              'Si tu épuises tes budgets : ${_savings(s.projectedSavingsBudgets)}',
+              style: theme.textTheme.bodyMedium?.copyWith(color: onColor),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Salaire ${euro(s.suggestedSalary)} − compte commun '
+              '${euro(s.suggestedSharedTransfer)} − dépensé '
+              '${euro(s.unsettledExpenses)} − marge ${euro(s.safetyMargin)}'
+              '${s.courant != s.safetyMargin ? ' (courant ${euro(s.courant)})' : ''}',
+              style: theme.textTheme.bodySmall?.copyWith(color: onColor),
             ),
           ],
         ),

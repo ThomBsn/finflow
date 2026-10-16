@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mis à jour par l'app à chaque chargement du résumé du mois : pas de
+     rafraîchissement périodique système (updatePeriodMillis = 0). -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/finflow_widget"
+    android:minWidth="180dp"
+    android:minHeight="100dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="80dp"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen" />

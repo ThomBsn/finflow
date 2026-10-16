@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème sombre du widget. -->
+    <color name="widget_background">#FF004F47</color>
+    <color name="widget_text">#FFB2F1E6</color>
+    <color name="widget_text_secondary">#FFBEC9C6</color>
+</resources>

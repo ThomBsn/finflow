@@ -79,6 +79,24 @@ class FinflowRepository {
         await _db.rpc<Json>('rebalance_from_safety_fund'),
       );
 
+  // Réglages ---------------------------------------------------------------
+
+  Future<Settings> settings() async => Settings.fromJson(
+    await _db
+        .from('settings')
+        .select('default_salary, default_shared_transfer, safety_margin')
+        .single(),
+  );
+
+  Future<void> saveSettings(Settings settings) => _db
+      .from('settings')
+      .update({
+        'default_salary': settings.defaultSalary,
+        'default_shared_transfer': settings.defaultSharedTransfer,
+        'safety_margin': settings.safetyMargin,
+      })
+      .eq('user_id', _db.auth.currentUser!.id);
+
   // Onboarding -------------------------------------------------------------
 
   Future<double> safetyMargin() async {

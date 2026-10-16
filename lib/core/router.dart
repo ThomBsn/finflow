@@ -10,6 +10,7 @@ import '../features/dashboard/dashboard_page.dart';
 import '../features/distribution/distribution_page.dart';
 import '../features/onboarding/onboarding_page.dart';
 import '../features/savings/savings_page.dart';
+import '../features/settings/settings_page.dart';
 import '../features/shell/app_shell.dart';
 import '../features/shell/offline_page.dart';
 import '../features/shell/placeholder_page.dart';
@@ -65,6 +66,10 @@ GoRouter createRouter(GoTrueClient auth, OnboardingGate gate) {
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/reglages',
+        builder: (context, state) => const SettingsPage(),
+      ),
       GoRoute(
         path: '/hors-ligne',
         builder: (context, state) => const OfflinePage(),

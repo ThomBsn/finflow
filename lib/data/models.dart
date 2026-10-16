@@ -152,10 +152,12 @@ class MonthSummary {
     required this.courant,
     required this.epargne,
     required this.unsettledExpenses,
-    required this.available,
     required this.safetyMargin,
     required this.suggestedSalary,
     required this.suggestedSharedTransfer,
+    required this.budgetRemaining,
+    required this.projectedSavings,
+    required this.projectedSavingsBudgets,
   });
 
   factory MonthSummary.fromJson(Json json) => MonthSummary(
@@ -163,10 +165,12 @@ class MonthSummary {
     courant: _money(json['courant']),
     epargne: _money(json['epargne']),
     unsettledExpenses: _money(json['unsettled_expenses']),
-    available: _money(json['available']),
     safetyMargin: _money(json['safety_margin']),
     suggestedSalary: _money(json['suggested_salary']),
     suggestedSharedTransfer: _money(json['suggested_shared_transfer']),
+    budgetRemaining: _money(json['budget_remaining']),
+    projectedSavings: _money(json['projected_savings']),
+    projectedSavingsBudgets: _money(json['projected_savings_budgets']),
   );
 
   final DateTime month;
@@ -176,11 +180,24 @@ class MonthSummary {
   /// Dépenses − revenus non réglés, déduits à la prochaine transition.
   final double unsettledExpenses;
 
-  /// Disponible estimé = courant − dépenses non réglées.
-  final double available;
   final double safetyMargin;
+
+  /// Salaire et virement commun habituels (réglages, sinon mois en cours).
   final double suggestedSalary;
   final double suggestedSharedTransfer;
+
+  /// Ce qui reste dans les enveloppes (abonnements à venir compris).
+  final double budgetRemaining;
+
+  /// Ce que la prochaine clôture épargnera au rythme actuel ; négatif : le
+  /// courant passera d'autant sous la marge.
+  final double projectedSavings;
+
+  /// Même chose si les budgets sont dépensés jusqu'au bout.
+  final double projectedSavingsBudgets;
+
+  /// Salaire habituel pas encore renseigné : l'épargne prévue n'a pas de sens.
+  bool get needsSalary => suggestedSalary <= 0;
 
   DateTime get nextMonth => DateTime(month.year, month.month + 1);
 }
@@ -496,4 +513,23 @@ class SettlementFlow {
   final FlowKind kind;
   final String label;
   final double amount;
+}
+
+/// Réglages de l'utilisateur (`settings`).
+class Settings {
+  const Settings({
+    required this.defaultSalary,
+    required this.defaultSharedTransfer,
+    required this.safetyMargin,
+  });
+
+  factory Settings.fromJson(Json json) => Settings(
+    defaultSalary: _money(json['default_salary']),
+    defaultSharedTransfer: _money(json['default_shared_transfer']),
+    safetyMargin: _money(json['safety_margin']),
+  );
+
+  final double defaultSalary;
+  final double defaultSharedTransfer;
+  final double safetyMargin;
 }

@@ -1,7 +1,7 @@
 -- Lot 3 bis : résumé du mois en cours, aperçu = résultat réel de close_month.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(15);
 
 -- Crée l'utilisateur n (courant de départ, octobre en cours, dépenses
 -- d'octobre) et agit en son nom.
@@ -39,9 +39,16 @@ insert into public.transactions (user_id, type, amount, category, date) values
 
 set local role authenticated;
 select is(
-  (select (month, courant, unsettled_expenses, available)::text from public.current_month_summary),
-  '(2026-10-01,350.00,1400.00,-1050.00)',
-  'résumé : disponible estimé = courant − (dépenses − revenus) non réglées, mois suivant exclu');
+  (select (month, courant, unsettled_expenses, projected_savings)::text from public.current_month_summary),
+  '(2026-10-01,350.00,1400.00,650.00)',
+  'résumé : épargne prévue = courant + salaire − commun − dépenses − marge, mois suivant exclu');
+reset role;
+update public.budgets set monthly_amount = 2000
+where user_id = '40000000-0000-0000-0000-000000000001' and category = 'Courses';
+set local role authenticated;
+select is(
+  (select (budget_remaining, projected_savings_budgets)::text from public.current_month_summary),
+  '(600.00,50.00)', 'résumé : épargne si les budgets sont épuisés (reste 600 sur Courses)');
 select is(
   (select (suggested_salary, suggested_shared_transfer)::text from public.current_month_summary),
   '(2500.00,600.00)', 'résumé : valeurs du mois en cours proposées');
@@ -50,6 +57,10 @@ select is(
 select set_config('test.preview', public.preview_close_month(2500, 600)::text, true);
 select is(pg_temp.amounts(current_setting('test.preview')::jsonb), '1400.00|650.00|200.00',
   'aperçu §3 : épargne 650, courant 200');
+select is(
+  (select projected_savings from public.current_month_summary),
+  (current_setting('test.preview')::jsonb ->> 'total_savings')::numeric(12,2),
+  'épargne prévue = épargne de l''aperçu de clôture');
 select is(
   pg_temp.amounts(public.close_month('2026-10-01', 2500, 600)),
   pg_temp.amounts(current_setting('test.preview')::jsonb),
@@ -90,8 +101,12 @@ select throws_ok($$select public.preview_close_month(2500, 600)$$, 'FF001', null
   'aperçu sans mois en cours : refusé');
 select public.complete_onboarding(200);
 select is(
-  (select (courant, available, suggested_salary)::text from public.current_month_summary),
-  '(200.00,200.00,0.00)', 'après onboarding : salaire à saisir');
+  (select (courant, projected_savings, suggested_salary)::text from public.current_month_summary),
+  '(200.00,0.00,0.00)', 'après onboarding : salaire à saisir dans les réglages');
+update public.settings set default_salary = 2500, default_shared_transfer = 600;
+select is(
+  (select (suggested_salary, projected_savings)::text from public.current_month_summary),
+  '(2500.00,1900.00)', 'salaire habituel des réglages pris en compte');
 select is((select count(*)::int from public.current_month_summary), 1,
   'résumé : uniquement l''utilisateur connecté');
 

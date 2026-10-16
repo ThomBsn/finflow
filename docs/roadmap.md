@@ -50,4 +50,4 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 **Fin :** l'app remplace Base44 au quotidien.
 
 ## Lot 6 — Bonus
-- [ ] Widget Android natif (Kotlin / Jetpack Glance) via `home_widget`, basé sur `current_month_summary`
+- [ ] Widget Android natif (Kotlin, RemoteViews) via `home_widget`, basé sur `current_month_summary` : disponible estimé, soldes, heure de mise à jour ; mis à jour à chaque chargement du résumé dans l'app
