@@ -1,7 +1,8 @@
 # 007 — Hébergement
 **Contexte :** un serveur perso capable de faire tourner des conteneurs est disponible ; Supabase couvre déjà base, auth et logique métier.
 **Décision :**
-- **Supabase Cloud** (offre gratuite) en production : Postgres, Auth, RPC, pg_cron. Le développement se fait sur le Supabase local (CLI).
+- **Supabase Cloud** (offre gratuite) en production : Postgres, Auth, RPC, pg_cron. Projet `ewesrsdeqiuimnvtmdrt` (ancien test « myfinance » réutilisé, eu-central-1), mis en service le 2026-10-16. Le développement se fait sur le Supabase local (CLI).
+- **Inscriptions fermées** sur le projet cloud : la clé publishable est embarquée dans l'APK et le site, n'importe qui pourrait sinon créer un compte.
 - **Serveur perso** : un conteneur statique (nginx ou Caddy) sert le build Flutter web.
 - **Pas d'API maison** tant qu'aucun besoin réel n'apparaît (ex. appel à un service tiers).
 - **Pas de SMTP perso** : le SMTP par défaut de Supabase suffit pour un seul utilisateur (envoi limité, réservé aux membres du projet).

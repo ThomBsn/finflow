@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/env.dart';
 import '../../core/router.dart';
 
 /// Affichée quand le serveur Supabase ne répond pas au démarrage.
 class OfflinePage extends ConsumerWidget {
   const OfflinePage({super.key});
+
+  /// Version de développement branchée sur le Supabase local du Mac.
+  static final _isLocal = Env.supabaseUrl.contains('127.0.0.1');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,10 +31,12 @@ class OfflinePage extends ConsumerWidget {
                   style: theme.textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Vérifie que Docker et Supabase tournent sur le Mac, et '
-                  'sur téléphone que le tunnel USB est actif '
-                  '(adb reverse tcp:54321 tcp:54321).',
+                Text(
+                  _isLocal
+                      ? 'Vérifie que Docker et Supabase tournent sur le Mac, et '
+                            'sur téléphone que le tunnel USB est actif '
+                            '(adb reverse tcp:54321 tcp:54321).'
+                      : 'Vérifie ta connexion internet.',
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),

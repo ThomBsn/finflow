@@ -26,3 +26,25 @@ flutter run --dart-define-from-file=env/local.json
 ```
 
 Dans VS Code, la config de lancement « FinFlow (local) » passe déjà les variables.
+
+## Production (Supabase Cloud)
+
+Projet `ewesrsdeqiuimnvtmdrt` (« myfinance », région eu-central-1), lié au repo par `supabase link`.
+La config client est dans `env/prod.json` (non versionné) : URL du projet + clé publishable
+(`supabase projects api-keys --project-ref ewesrsdeqiuimnvtmdrt`).
+
+Migrations : tester en local (`supabase test db`), puis
+
+```sh
+supabase db push --linked --dry-run   # vérifier la liste
+supabase db push --linked
+```
+
+APK pour le téléphone (signé avec la clé de debug du Mac, suffisant hors Play Store) :
+
+```sh
+flutter build apk --release --dart-define-from-file=env/prod.json
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
+
+Le Supabase local ne sert plus qu'au développement : les vraies données sont dans le cloud.
