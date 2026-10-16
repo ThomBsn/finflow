@@ -38,6 +38,9 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   late DateTime _date;
   String? _category;
   late bool _horsBudget;
+
+  /// Nombre de mois d'étalement sur le budget, null si pas étalée.
+  int? _installments;
   bool _saving = false;
   String? _error;
 
@@ -56,6 +59,24 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     _date = t?.date ?? DateTime(now.year, now.month, now.day);
     _category = t?.category;
     _horsBudget = t?.horsBudget ?? false;
+    _installments = t?.installments;
+    _amount.addListener(() => setState(() {}));
+  }
+
+  /// Seule une dépense comptée dans un budget peut être étalée.
+  bool get _canSpread =>
+      _type == TransactionType.depense && !_horsBudget && _category != null;
+
+  /// « 3 × 66,66 € sur Loisirs, d'octobre à décembre » ; la base tronque au
+  /// centime et met le reliquat sur la dernière mensualité.
+  String? get _spreadSummary {
+    final amount = parseAmount(_amount.text);
+    final n = _installments;
+    if (amount == null || amount <= 0 || n == null) return null;
+    final share = (amount / n * 100).truncateToDouble() / 100;
+    final last = DateTime(_date.year, _date.month + n - 1);
+    return '$n × ${euro(share)} sur $_category, de '
+        '${monthLabel(_date).toLowerCase()} à ${monthLabel(last).toLowerCase()}';
   }
 
   @override
@@ -103,21 +124,25 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    await _run(
-      () => ref
-          .read(repositoryProvider)
-          .saveTransaction(
-            TransactionDraft(
-              id: widget.existing?.id,
-              date: _date,
-              type: _type,
-              amount: parseAmount(_amount.text)!,
-              label: _label.text.trim(),
-              category: _category,
-              horsBudget: _horsBudget,
-            ),
-          ),
-    );
+    await _run(() async {
+      final repo = ref.read(repositoryProvider);
+      final id = await repo.saveTransaction(
+        TransactionDraft(
+          id: widget.existing?.id,
+          date: _date,
+          type: _type,
+          amount: parseAmount(_amount.text)!,
+          label: _label.text.trim(),
+          category: _category,
+          horsBudget: _horsBudget,
+        ),
+      );
+      await repo.setInstallments(
+        id,
+        installments: _canSpread ? _installments : null,
+        current: widget.existing?.installments,
+      );
+    });
   }
 
   Future<void> _delete() async {
@@ -240,6 +265,33 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                 value: _horsBudget,
                 onChanged: (v) => setState(() => _horsBudget = v),
               ),
+              if (_canSpread) ...[
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Étaler sur le budget'),
+                  subtitle: const Text(
+                    'Payée en une fois, mais le budget ne compte qu\'une '
+                    'mensualité par mois',
+                  ),
+                  value: _installments != null,
+                  onChanged: (v) =>
+                      setState(() => _installments = v ? 3 : null),
+                ),
+                if (_installments != null)
+                  DropdownButtonFormField<int>(
+                    initialValue: _installments,
+                    decoration: InputDecoration(
+                      labelText: 'Nombre de mois',
+                      helperText: _spreadSummary,
+                      helperMaxLines: 2,
+                    ),
+                    items: [
+                      for (final n in const [2, 3, 4, 5, 6, 8, 10, 12, 18, 24])
+                        DropdownMenuItem(value: n, child: Text('$n mois')),
+                    ],
+                    onChanged: (n) => setState(() => _installments = n),
+                  ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: 8),
                 Text(_error!, style: TextStyle(color: theme.colorScheme.error)),

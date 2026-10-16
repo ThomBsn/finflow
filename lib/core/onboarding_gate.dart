@@ -22,17 +22,34 @@ class OnboardingGate extends ChangeNotifier {
   late final StreamSubscription<AuthState> _subscription;
   Future<bool>? _onboarded;
 
+  /// Échoue au bout de [_timeout] si le serveur ne répond pas, pour que le
+  /// routeur affiche l'écran « serveur injoignable » au lieu d'un écran noir.
+  static const _timeout = Duration(seconds: 5);
+
+  /// Vrai après un échec : le routeur reste sur l'écran hors ligne sans
+  /// réinterroger le serveur, jusqu'à [retry].
+  bool get offline => _offline;
+  bool _offline = false;
+
   Future<bool> isOnboarded() async {
     try {
-      return await (_onboarded ??= _repository.isOnboarded());
+      return await (_onboarded ??= _repository.isOnboarded().timeout(_timeout));
     } catch (_) {
       _onboarded = null;
+      _offline = true;
       rethrow;
     }
   }
 
   void markOnboarded() {
     _onboarded = Future.value(true);
+    notifyListeners();
+  }
+
+  /// Relance la vérification (bouton « Réessayer »).
+  void retry() {
+    _onboarded = null;
+    _offline = false;
     notifyListeners();
   }
 

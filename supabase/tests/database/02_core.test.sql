@@ -215,9 +215,13 @@ select pg_temp.new_user(13, 0);
 insert into public.subscriptions (user_id, name, amount, billing_day, created_at)
 values (pg_temp.uid(13), 'Streaming', 12.99, 31, '2027-02-01');
 
-select is(private.generate_subscription_charges('2027-02-27'), 0, 'abonnement : pas avant le jour de prélèvement');
-select is(private.generate_subscription_charges('2027-02-28'), 1, 'abonnement : 31 → dernier jour de février');
-select is(private.generate_subscription_charges('2027-02-28'), 0, 'abonnement : rejeu sans doublon');
+-- La génération traite tous les utilisateurs : on ne compte que ceux du test.
+select private.generate_subscription_charges('2027-02-27');
+select is((select count(*)::int from public.transactions where user_id = pg_temp.uid(13) and subscription_id is not null), 0, 'abonnement : pas avant le jour de prélèvement');
+select private.generate_subscription_charges('2027-02-28');
+select is((select count(*)::int from public.transactions where user_id = pg_temp.uid(13) and subscription_id is not null), 1, 'abonnement : 31 → dernier jour de février');
+select private.generate_subscription_charges('2027-02-28');
+select is((select count(*)::int from public.transactions where user_id = pg_temp.uid(13) and subscription_id is not null), 1, 'abonnement : rejeu sans doublon');
 select is(
   (select (date, amount, category, settled)::text from public.transactions
    where subscription_id is not null and user_id = pg_temp.uid(13)),

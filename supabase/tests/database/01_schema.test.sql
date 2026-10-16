@@ -76,7 +76,8 @@ select is((select count(*)::int from public.savings_projects where is_safety_fun
 
 -- Une transaction réglée est figée.
 reset role;
-update public.transactions set settled = true;
+update public.transactions set settled = true
+where user_id = '11111111-1111-1111-1111-111111111111';
 set local role authenticated;
 delete from public.transactions;
 select is((select count(*)::int from public.transactions), 1,

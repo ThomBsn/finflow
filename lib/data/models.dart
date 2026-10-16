@@ -7,6 +7,13 @@ typedef Json = Map<String, dynamic>;
 double _money(Object? v) => (v as num?)?.toDouble() ?? 0;
 DateTime _date(Object? v) => DateTime.parse(v! as String);
 
+/// `installment_plans(installments)` embarqué par PostgREST (objet ou liste).
+int? _embeddedInstallments(Object? v) => switch (v) {
+  {'installments': final int n} => n,
+  [{'installments': final int n}, ...] => n,
+  _ => null,
+};
+
 String dbDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
@@ -99,7 +106,7 @@ class Transaction {
     required this.category,
     required this.horsBudget,
     required this.settled,
-    required this.installmentPlanId,
+    required this.installments,
   });
 
   factory Transaction.fromJson(Json json) => Transaction(
@@ -111,7 +118,7 @@ class Transaction {
     category: json['category'] as String?,
     horsBudget: json['hors_budget'] as bool,
     settled: json['settled'] as bool,
-    installmentPlanId: json['installment_plan_id'] as String?,
+    installments: _embeddedInstallments(json['installment_plans']),
   );
 
   final String id;
@@ -122,12 +129,13 @@ class Transaction {
   final String? category;
   final bool horsBudget;
   final bool settled;
-  final String? installmentPlanId;
+
+  /// Nombre de mois sur lesquels la dépense est étalée dans son budget.
+  final int? installments;
 
   /// Ce que la RLS laisse modifier au client.
   bool get editable =>
       !settled &&
-      installmentPlanId == null &&
       (type == TransactionType.depense || type == TransactionType.revenu);
 
   /// Montant signé du point de vue du compte courant.
@@ -237,4 +245,159 @@ class TransactionDraft {
     'category': category,
     'hors_budget': horsBudget,
   };
+}
+
+class Subscription {
+  const Subscription({
+    required this.id,
+    required this.name,
+    required this.amount,
+    required this.billingDay,
+    required this.active,
+  });
+
+  factory Subscription.fromJson(Json json) => Subscription(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    amount: _money(json['amount']),
+    billingDay: json['billing_day'] as int,
+    active: json['active'] as bool,
+  );
+
+  final String id;
+  final String name;
+  final double amount;
+  final int billingDay;
+  final bool active;
+}
+
+/// Ligne de la vue `installment_plans_status` : dépense étalée sur son budget.
+class InstallmentPlan {
+  const InstallmentPlan({
+    required this.id,
+    required this.label,
+    required this.category,
+    required this.date,
+    required this.totalAmount,
+    required this.installments,
+    required this.monthlyAmount,
+    required this.currentNumber,
+    required this.remainingCount,
+    required this.remainingAmount,
+  });
+
+  factory InstallmentPlan.fromJson(Json json) => InstallmentPlan(
+    id: json['id'] as String,
+    label: json['label'] as String,
+    category: json['category'] as String,
+    date: _date(json['date']),
+    totalAmount: _money(json['total_amount']),
+    installments: json['installments'] as int,
+    monthlyAmount: _money(json['monthly_amount']),
+    currentNumber: json['current_number'] as int,
+    remainingCount: json['remaining_count'] as int,
+    remainingAmount: _money(json['remaining_amount']),
+  );
+
+  final String id;
+  final String label;
+  final String category;
+  final DateTime date;
+  final double totalAmount;
+  final int installments;
+  final double monthlyAmount;
+
+  /// Rang de la mensualité du mois en cours (> [installments] : terminé).
+  final int currentNumber;
+  final int remainingCount;
+
+  /// Part de la dépense qui pèsera encore sur les budgets des mois suivants.
+  final double remainingAmount;
+
+  bool get finished => currentNumber >= installments;
+}
+
+/// Ligne de la vue `budget_lines_current_month` : contribution d'une
+/// transaction au consommé d'un budget du mois en cours.
+class BudgetLine {
+  const BudgetLine({
+    required this.transactionId,
+    required this.date,
+    required this.label,
+    required this.type,
+    required this.amount,
+    required this.transactionAmount,
+    required this.installmentNumber,
+    required this.installments,
+  });
+
+  factory BudgetLine.fromJson(Json json) => BudgetLine(
+    transactionId: json['transaction_id'] as String,
+    date: _date(json['date']),
+    label: json['label'] as String,
+    type: TransactionType.parse(json['type'] as String),
+    amount: _money(json['amount']),
+    transactionAmount: _money(json['transaction_amount']),
+    installmentNumber: json['installment_number'] as int?,
+    installments: json['installments'] as int?,
+  );
+
+  final String transactionId;
+  final DateTime date;
+  final String label;
+  final TransactionType type;
+
+  /// Contribution au consommé : mensualité si étalée, négative pour un revenu.
+  final double amount;
+  final double transactionAmount;
+  final int? installmentNumber;
+  final int? installments;
+
+  bool get isInstallment => installments != null;
+}
+
+enum DistributionMode {
+  automatique,
+  precis;
+
+  String get db => name;
+}
+
+class SavingsProject {
+  const SavingsProject({
+    required this.id,
+    required this.name,
+    required this.percentage,
+    required this.targetAmount,
+    required this.currentAmount,
+    required this.isDefault,
+    required this.isSafetyFund,
+  });
+
+  factory SavingsProject.fromJson(Json json) => SavingsProject(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    percentage: _money(json['percentage']),
+    targetAmount: json['target_amount'] == null
+        ? null
+        : _money(json['target_amount']),
+    currentAmount: _money(json['current_amount']),
+    isDefault: json['is_default'] as bool,
+    isSafetyFund: json['is_safety_fund'] as bool,
+  );
+
+  final String id;
+  final String name;
+  final double percentage;
+  final double? targetAmount;
+  final double currentAmount;
+
+  /// Épargne générale : reçoit le complément à 100 %, sans objectif.
+  final bool isDefault;
+
+  /// Fond de sécurité : reçoit les excédents, sert au rééquilibrage.
+  final bool isSafetyFund;
+
+  bool get isSystem => isDefault || isSafetyFund;
+  bool get isFull => targetAmount != null && currentAmount >= targetAmount!;
 }

@@ -35,9 +35,10 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 - [x] Dashboard minimal : soldes, disponible estimé, bouton de transition, alerte négatif + rééquilibrage
 
 ## Lot 4 — Compléments
-- [ ] Abonnements : CRUD, budget « Abonnements » calculé, job pg_cron quotidien
-- [ ] Échelonnements (RPC + affichage des mensualités restantes)
-- [ ] Projets d'épargne (CRUD, pourcentages, objectifs)
+- [x] Abonnements : CRUD, budget « Abonnements » calculé, job pg_cron quotidien
+- [x] Échelonnements : étalement d'une dépense sur son budget, suivi des mensualités
+- [x] Composition d'un budget du mois (part de chaque dépense / mensualité)
+- [x] Projets d'épargne (CRUD, pourcentages, objectifs)
 **Fin :** parité fonctionnelle des entités avec Base44.
 
 ## Lot 5 — Pages

@@ -54,7 +54,9 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
   - La somme des pourcentages doit être **≤ 100**. Le complément à 100 % va à **Épargne générale** (`is_default`).
   - Montants arrondis au centime ; le **reliquat d'arrondi** va à **Épargne générale**.
   - Mode utilisé par `close_month`.
-- **Mode `precis`** : saisie manuelle d'un versement d'épargne, tout va au projet choisi (`savings_project_id`).
+- **Mode `precis`** : tout va au projet choisi (`savings_project_id`).
+- **Versement manuel** (« Épargner maintenant », RPC `save_to_savings`) : débite le courant tout de suite, en mode automatique ou précis.
+- **Nouveau projet** : un montant « déjà épargné » peut être repris (projet existant ailleurs) ; il crédite le compte épargne sans toucher au courant.
 - **Débordement en cascade** (dans les deux modes) : si un projet atteint `target_amount`, l'excédent va au **Fond de sécurité** ; s'il est plein, à **Épargne générale** (sans plafond).
 - Invariant : solde du compte épargne = somme des `current_amount` des projets.
 
@@ -66,10 +68,14 @@ Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 - **Abonnements** : tous dans la catégorie unique **« Abonnements »** (budget créé par le seed).
   - Alloué du budget = somme des `amount` des abonnements actifs (calculé, non saisi).
   - Le jour `billing_day` de chaque mois, une tâche planifiée crée une `depense` (catégorie Abonnements, `settled = false`, `subscription_id` renseigné). Si ce jour n'existe pas dans le mois (ex. 31 en février), on prend le dernier jour du mois.
+  - Au plus un prélèvement par abonnement et par mois ; un prélèvement supprimé n'est pas recréé, et un abonnement créé après son jour de prélèvement démarre le mois suivant.
   - Ces dépenses comptent dans le consommé du budget Abonnements.
   - Création, modification et suppression depuis l'onglet Abonnements de la page Dépenses.
-- **Échelonnements** : une grosse dépense répartie sur N mois. Chaque mensualité est une transaction du mois concerné et **compte dans le budget de ce mois**.
-  Génération : les N transactions sont créées à la création du plan (une par mois, à partir de `start_month`).
+- **Échelonnements** : étalement d'une dépense **sur son budget**, pour qu'une grosse dépense ne bloque pas l'enveloppe d'un mois entier.
+  - L'argent sort en une fois : la dépense entière est déduite du courant à la clôture de son mois (aucun effet sur le solde ni sur l'épargne).
+  - Le budget de sa catégorie ne compte qu'une mensualité par mois pendant N mois à partir du mois de la dépense : montant / N tronqué au centime, reliquat sur la dernière.
+  - Activé depuis la dépense (« Étaler sur le budget »), uniquement pour une dépense comptée dans un budget (ni revenu, ni hors budget). Modifier la dépense met l'étalement à jour ; la supprimer le supprime ; « ne plus étaler » la fait compter en entier dans son mois.
+- **Composition d'un budget** : pour le mois en cours, chaque dépense, revenu déduit ou mensualité qui compose le consommé, avec sa part de l'enveloppe.
 
 ## 7. Hors budget
 - `hors_budget = true` : exclu des enveloppes, mais déduit du courant à la transition (ce qui réduit d'autant l'épargne du mois).

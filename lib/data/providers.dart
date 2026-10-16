@@ -53,10 +53,38 @@ final transactionsProvider =
           .transactions(month: filter.month, category: filter.category);
     });
 
-/// À appeler après toute écriture sur les transactions ou les budgets.
+final subscriptionsProvider = FutureProvider<List<Subscription>>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).subscriptions();
+});
+
+final installmentPlansProvider = FutureProvider<List<InstallmentPlan>>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).installmentPlans();
+});
+
+final savingsProjectsProvider = FutureProvider<List<SavingsProject>>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).savingsProjects();
+});
+
+final budgetLinesProvider = FutureProvider.family<List<BudgetLine>, String>((
+  ref,
+  budgetId,
+) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).budgetLines(budgetId);
+});
+
+/// À appeler après toute écriture : transactions, budgets, abonnements,
+/// échelonnements ou épargne (tout peut changer le résumé du mois).
 void invalidateMonthData(WidgetRef ref) {
   ref.invalidate(transactionsProvider);
+  ref.invalidate(subscriptionsProvider);
+  ref.invalidate(installmentPlansProvider);
+  ref.invalidate(savingsProjectsProvider);
   ref.invalidate(budgetStatusProvider);
+  ref.invalidate(budgetLinesProvider);
   ref.invalidate(budgetsProvider);
   ref.invalidate(monthSummaryProvider);
 }

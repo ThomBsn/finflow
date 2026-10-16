@@ -5,6 +5,7 @@ import '../../core/category_icons.dart';
 import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import 'budget_detail_sheet.dart';
 import 'budget_form.dart';
 
 /// Page Budgets : alloué / dépensé / reste du mois en cours.
@@ -20,10 +21,8 @@ class BudgetsPage extends ConsumerWidget {
         b.id: b,
     };
 
-    void edit(BudgetStatus s) {
-      final budget = budgets[s.id];
-      if (budget != null) showBudgetForm(context, budget: budget);
-    }
+    void open(BudgetStatus s) =>
+        showBudgetDetail(context, status: s, budget: budgets[s.id]);
 
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +52,7 @@ class BudgetsPage extends ConsumerWidget {
                 _BudgetCard.summary(allocated, spent),
                 const SizedBox(height: 8),
                 for (final s in inBudget)
-                  _BudgetCard(status: s, onTap: () => edit(s)),
+                  _BudgetCard(status: s, onTap: () => open(s)),
                 if (outOfBudget.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
@@ -63,7 +62,7 @@ class BudgetsPage extends ConsumerWidget {
                     ),
                   ),
                   for (final s in outOfBudget)
-                    _BudgetCard(status: s, onTap: () => edit(s)),
+                    _BudgetCard(status: s, onTap: () => open(s)),
                 ],
               ],
             ),

@@ -5,17 +5,46 @@ import '../../core/category_icons.dart';
 import '../../core/format.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../installments/installments_tab.dart';
+import '../subscriptions/subscriptions_tab.dart';
 import 'transaction_form.dart';
 
-/// Page Dépenses : transactions d'un mois, filtrables par catégorie.
-class TransactionsPage extends ConsumerStatefulWidget {
+/// Page Dépenses : transactions, abonnements, échelonnements.
+class TransactionsPage extends StatelessWidget {
   const TransactionsPage({super.key});
 
   @override
-  ConsumerState<TransactionsPage> createState() => _TransactionsPageState();
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Dépenses'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Transactions'),
+              Tab(text: 'Abonnements'),
+              Tab(text: 'Échelonnements'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [TransactionsTab(), SubscriptionsTab(), InstallmentsTab()],
+        ),
+      ),
+    );
+  }
 }
 
-class _TransactionsPageState extends ConsumerState<TransactionsPage> {
+/// Transactions d'un mois, filtrables par catégorie.
+class TransactionsTab extends ConsumerStatefulWidget {
+  const TransactionsTab({super.key});
+
+  @override
+  ConsumerState<TransactionsTab> createState() => _TransactionsTabState();
+}
+
+class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   DateTime? _month; // null : mois en cours
   String? _category; // null : toutes
 
@@ -27,7 +56,6 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     final month = _month ?? currentMonth;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Dépenses')),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Ajouter',
         onPressed: budgets.isEmpty
@@ -219,6 +247,7 @@ class _TransactionTile extends StatelessWidget {
     final details = [
       ?t.category,
       if (t.horsBudget) 'hors budget',
+      if (t.installments != null) 'étalée sur ${t.installments} mois',
       if (t.settled) 'réglée',
     ];
 

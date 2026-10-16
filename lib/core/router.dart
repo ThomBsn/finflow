@@ -8,7 +8,9 @@ import '../features/auth/login_page.dart';
 import '../features/budgets/budgets_page.dart';
 import '../features/dashboard/dashboard_page.dart';
 import '../features/onboarding/onboarding_page.dart';
+import '../features/savings/savings_page.dart';
 import '../features/shell/app_shell.dart';
+import '../features/shell/offline_page.dart';
 import '../features/shell/placeholder_page.dart';
 import '../features/transactions/transactions_page.dart';
 import 'onboarding_gate.dart';
@@ -43,20 +45,29 @@ GoRouter createRouter(GoTrueClient auth, OnboardingGate gate) {
         return location == '/login' ? null : '/login';
       }
 
+      if (gate.offline) {
+        return location == '/hors-ligne' ? null : '/hors-ligne';
+      }
       final bool onboarded;
       try {
         onboarded = await gate.isOnboarded();
       } catch (_) {
-        return null; // Réseau indisponible : on réessaiera à la navigation suivante.
+        return location == '/hors-ligne' ? null : '/hors-ligne';
       }
       if (!onboarded) {
         return location == '/onboarding' ? null : '/onboarding';
       }
-      if (location == '/login' || location == '/onboarding') return home;
+      if (const ['/login', '/onboarding', '/hors-ligne'].contains(location)) {
+        return home;
+      }
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+      GoRoute(
+        path: '/hors-ligne',
+        builder: (context, state) => const OfflinePage(),
+      ),
       GoRoute(
         path: '/onboarding',
         builder: (context, state) => const OnboardingPage(),
@@ -83,5 +94,6 @@ Widget _pageFor(AppDestination destination) => switch (destination.path) {
   '/' => const DashboardPage(),
   '/depenses' => const TransactionsPage(),
   '/budgets' => const BudgetsPage(),
+  '/epargne' => const SavingsPage(),
   _ => PlaceholderPage(title: destination.label),
 };
