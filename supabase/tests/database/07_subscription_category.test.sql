@@ -44,8 +44,10 @@ select is(pg_temp.budget('Véhicule'), '(20.00,40.00,-20.00,0.00)',
   'après prélèvement : dépensé, plus rien de réservé');
 
 -- Catégorie hors budget : le prélèvement l'est aussi.
+insert into public.budgets (user_id, category, hors_budget)
+values ('70000000-0000-0000-0000-000000000001', 'Pro', true);
 insert into public.subscriptions (user_id, name, amount, billing_day, category, created_at)
-values ('70000000-0000-0000-0000-000000000001', 'Box', 30, 20, 'Frais externes', '2026-10-01');
+values ('70000000-0000-0000-0000-000000000001', 'Box', 30, 20, 'Pro', '2026-10-01');
 select private.generate_subscription_charges('2026-10-21');
 select is(
   (select hors_budget from public.transactions

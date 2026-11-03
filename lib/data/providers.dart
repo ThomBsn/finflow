@@ -55,7 +55,8 @@ final budgetStatusProvider = FutureProvider<List<BudgetStatus>>((ref) {
   return ref.watch(repositoryProvider).budgetStatus();
 });
 
-typedef TransactionFilter = ({DateTime month, String? category});
+/// month null : tous les mois.
+typedef TransactionFilter = ({DateTime? month, String? category});
 
 final transactionsProvider =
     FutureProvider.family<List<Transaction>, TransactionFilter>((ref, filter) {
@@ -64,6 +65,18 @@ final transactionsProvider =
           .watch(repositoryProvider)
           .transactions(month: filter.month, category: filter.category);
     });
+
+final horsBudgetToSettleProvider =
+    FutureProvider.family<List<Transaction>, DateTime>((ref, month) {
+      _watchUser(ref);
+      return ref.watch(repositoryProvider).horsBudgetToSettle(month);
+    });
+
+/// Montant déjà remboursé depuis l'épargne, par dépense.
+final reimbursementsProvider = FutureProvider<Map<String, double>>((ref) {
+  _watchUser(ref);
+  return ref.watch(repositoryProvider).reimbursements();
+});
 
 final subscriptionsProvider = FutureProvider<List<Subscription>>((ref) {
   _watchUser(ref);
@@ -103,6 +116,8 @@ final settlementFlowsProvider =
 /// échelonnements ou épargne (tout peut changer le résumé du mois).
 void invalidateMonthData(WidgetRef ref) {
   ref.invalidate(transactionsProvider);
+  ref.invalidate(horsBudgetToSettleProvider);
+  ref.invalidate(reimbursementsProvider);
   ref.invalidate(subscriptionsProvider);
   ref.invalidate(installmentPlansProvider);
   ref.invalidate(savingsProjectsProvider);

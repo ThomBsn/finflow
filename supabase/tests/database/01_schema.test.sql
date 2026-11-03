@@ -17,10 +17,9 @@ select is(
    where user_id = '11111111-1111-1111-1111-111111111111' and (is_default or is_safety_fund)),
   2, 'Fond de sécurité + Épargne générale créés');
 select ok(
-  exists (select 1 from public.budgets
-          where user_id = '11111111-1111-1111-1111-111111111111'
-            and category = 'Frais externes' and hors_budget),
-  'budget « Frais externes » hors budget');
+  not exists (select 1 from public.budgets
+              where user_id = '11111111-1111-1111-1111-111111111111' and hors_budget),
+  'aucun budget hors budget par défaut (plus de « Frais externes »)');
 select ok(
   exists (select 1 from public.budgets
           where user_id = '11111111-1111-1111-1111-111111111111' and category = 'Abonnements'),

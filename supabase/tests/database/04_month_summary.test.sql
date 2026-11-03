@@ -34,14 +34,15 @@ $$;
 select pg_temp.setup(1, 350, 1000);
 insert into public.transactions (user_id, type, amount, category, date) values
   ('40000000-0000-0000-0000-000000000001', 'depense', 450, 'Courses', '2026-10-12'),
-  ('40000000-0000-0000-0000-000000000001', 'revenu', 50, 'Courses', '2026-10-13'),
-  ('40000000-0000-0000-0000-000000000001', 'depense', 80, 'Courses', '2026-11-02');
+  ('40000000-0000-0000-0000-000000000001', 'revenu', 50, 'Courses', '2026-10-13');
+insert into public.transactions (user_id, type, amount, category, date, month) values
+  ('40000000-0000-0000-0000-000000000001', 'depense', 80, 'Courses', '2026-10-30', '2026-11-01');
 
 set local role authenticated;
 select is(
   (select (month, courant, unsettled_expenses, projected_savings)::text from public.current_month_summary),
   '(2026-10-01,350.00,1400.00,650.00)',
-  'résumé : épargne prévue = courant + salaire − commun − dépenses − marge, mois suivant exclu');
+  'résumé : épargne prévue = courant + salaire − commun − dépenses − marge, dépense reportée au mois suivant exclue');
 reset role;
 update public.budgets set monthly_amount = 2000
 where user_id = '40000000-0000-0000-0000-000000000001' and category = 'Courses';

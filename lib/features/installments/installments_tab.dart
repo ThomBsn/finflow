@@ -27,7 +27,7 @@ class InstallmentsTab extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
               child: Text(
-                'Une grosse dépense est payée en une fois, mais son budget '
+                'Une grosse dépense est débitée en entier, mais son budget '
                 'n\'en compte qu\'une mensualité par mois. Pour étaler une '
                 'dépense, ouvre-la dans Transactions et active « Étaler sur '
                 'le budget ».',
@@ -97,7 +97,7 @@ class _PlanCard extends ConsumerWidget {
               ],
             ),
             Text(
-              '${p.category} · payée le ${dayLabel(p.date).toLowerCase()}',
+              '${p.category} · achetée le ${dayLabel(p.date).toLowerCase()}',
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),

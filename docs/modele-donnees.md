@@ -18,11 +18,11 @@ Lecture : ses propres lignes. Écriture accordée colonne par colonne ; tout le 
 | monthly_settlements | lire seulement |
 
 ## Données par défaut
-Créées à l'inscription (trigger sur `auth.users` → `init_user_data`) : settings, comptes courant + épargne, Fond de sécurité, Épargne générale, budgets Courses, Logement, Transport, Restaurants, Loisirs, Santé, Shopping, Abonnements, Frais externes (hors budget).
+Créées à l'inscription (trigger sur `auth.users` → `init_user_data`) : settings, comptes courant + épargne, Fond de sécurité, Épargne générale, budgets Courses, Logement, Transport, Restaurants, Loisirs, Santé, Shopping, Abonnements.
 
 ## Enums
-- `account_type` : `courant`, `epargne` (pas de compte commun : le virement est une dépense « Frais externes »)
-- `transaction_type` : `depense`, `revenu`, `transfert_epargne`, `retrait_epargne`, `transfert`
+- `account_type` : `courant`, `epargne` (pas de compte commun : le virement est un `transfert` sans catégorie)
+- `transaction_type` : `depense`, `revenu`, `transfert_epargne`, `retrait_epargne`, `transfert` (virement compte commun), `salaire` (créé par la clôture). Seuls `depense` et `revenu` comptent dans les dépenses ; les autres sont des mouvements.
 - `distribution_mode` : `automatique`, `precis`
 - `settlement_status` : `pending`, `settled`
 
@@ -46,21 +46,24 @@ Créées à l'inscription (trigger sur `auth.users` → `init_user_data`) : sett
 | category | text | unique (user_id, category) |
 | monthly_amount | numeric | ≥ 0 ; ignoré pour « Abonnements » (alloué calculé dans la vue) |
 | icon | text | |
-| hors_budget | bool | true pour « Frais externes » |
+| hors_budget | bool | ses dépenses sont hors budget (sans enveloppe) |
 
 ## transactions
 | Champ | Type | Note |
 |---|---|---|
 | date | date | |
-| month | date | `generated always as (date_trunc('month', date::timestamp)::date) stored` — le `::timestamp` est obligatoire : sans lui Postgres choisit la variante `timestamptz` de `date_trunc`, non immuable, refusée dans une colonne générée |
+| month | date | mois de débit (1er du mois), saisi ; trigger `default_transaction_month` si absent : mois en cours pour une `depense` / un `revenu` non réglé, sinon mois de la date (était une colonne générée depuis la date jusqu'au 2026-11-03) |
 | type | transaction_type | |
 | amount | numeric | > 0, le sens dépend du type |
 | label | text | |
 | category | text | |
 | account_id | uuid → accounts | compte courant si non renseigné (trigger) |
 | target_account_id | uuid → accounts | null sauf transferts |
-| hors_budget | bool | défaut false |
+| hors_budget | bool | défaut false ; exclue des budgets, déduite du courant (spec §7) |
+| immediate | bool | défaut false ; débit immédiat : le trigger `apply_immediate_expense` débite le courant à la saisie (modif / suppression ajustent) ; `depense` uniquement |
+| reimburses_id | uuid → transactions | null sauf `retrait_epargne` qui rembourse une dépense |
 | settled | bool | défaut false |
+| deducted | bool | posé par la clôture : montant sorti du courant (toujours vrai depuis le 2026-11-04) |
 | savings_project_id | uuid → savings_projects | null |
 | subscription_id | uuid → subscriptions | null sauf prélèvement d'abonnement |
 | settlement_id | uuid → monthly_settlements | clôture qui a réglé ou créé la transaction (salaire, compte commun, épargne) |
@@ -118,13 +121,14 @@ Index : (user_id, month), (user_id, category, month), unique (subscription_id, d
 | `rebalance_from_safety_fund()` | Ramène le courant vers 0 depuis le Fond de sécurité, retrait partiel si insuffisant ; renvoie montant retiré et reste à couvrir (spec §4) |
 | `create_savings_project(p_name, p_percentage, p_target, p_initial_amount, p_icon)` | Crée un projet, avec reprise d'un montant déjà épargné |
 | `save_to_savings(p_amount, p_mode, p_project_id)` | Versement manuel du courant vers l'épargne |
+| `withdraw_from_savings(p_amount, p_project_id, p_reimburses)` | Retrait de l'épargne vers le courant, depuis un projet ou en cascade (Épargne générale, autres projets, Fond de sécurité) ; `FF004` si insuffisant ; `p_reimburses` relie le retrait à la dépense qu'il rembourse |
 | `adjust_savings_project(p_project_id, p_amount)` | Correction du montant d'un projet (recalage sur la banque) : le compte épargne suit, le courant ne bouge pas |
 | `private.distribute_savings(p_user, p_amount, p_mode, p_project_id, p_date)` | Interne : vire du courant vers l'épargne et répartit (spec §5) ; appelée par `close_month` et la future saisie manuelle |
 | `private.generate_subscription_charges(p_date)` | Interne, tous utilisateurs : crée les prélèvements dus du mois de `p_date` et du mois précédent, jamais avant la création de l'abonnement ; idempotent via l'index unique |
 | `complete_onboarding(p_courant, p_safety_fund, p_general_savings)` | Soldes de départ, ouvre le mois en cours ; une seule fois (spec §9) |
 
 Le schéma `private` n'est pas exposé par l'API ; seules les fonctions de `public` listées ci-dessus sont appelables par le client.
-Erreurs métier (SQLSTATE) : `FF001` mois pas en cours · `FF002` mois suivant existant · `FF003` projet d'épargne inconnu · `FF004` montant invalide · `FF005` onboarding déjà fait · `FF006` budget système (Abonnements, Frais externes) non renommable ni supprimable.
+Erreurs métier (SQLSTATE) : `FF001` mois pas en cours · `FF002` mois suivant existant · `FF003` projet d'épargne inconnu · `FF004` montant invalide · `FF005` onboarding déjà fait · `FF006` budget système (Abonnements) non renommable ni supprimable.
 Renommer un budget renomme ses transactions (trigger `budget_category_change`).
 Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne` épargne → courant (`account_id` → `target_account_id`).
 
@@ -136,4 +140,4 @@ Sens des transferts : `transfert_epargne` courant → épargne, `retrait_epargne
 - `budget_status_current_month` (security invoker) : par budget → alloué (pour « Abonnements » : somme de ses abonnements actifs), dépensé (Σ des lignes), reste, `reserved` (abonnements de la catégorie pas encore prélevés ce mois-ci), `installment_spent` (part du dépensé due aux mensualités d'étalement)
 - `settlement_flows` (security invoker) : par mois clôturé, chaque flux entrant (solde de départ, salaire, autres revenus, découvert final) et sortant (dépenses par catégorie, compte commun, épargne par projet, courant restant, découvert comblé) ; Σ entrées = Σ sorties
 - `installment_plans_status` (security invoker) : par dépense étalée → mensualité, rang au mois en cours, mensualités restantes, montant restant à imputer
-- `current_month_summary` (security invoker) : mois en cours, soldes, dépenses − revenus non réglés (ce que réglera la transition), marge, salaire et virement commun habituels (`settings`, sinon ceux du mois en cours), reste des budgets, `projected_savings` (épargne prévue à la clôture) et `projected_savings_budgets` (si budgets épuisés) — base du widget
+- `current_month_summary` (security invoker) : mois en cours, soldes, dépenses − revenus non réglés (ce que déduira la transition : sans hors budget ni débit immédiat), `immediate_expenses`, `hors_budget_expenses`, marge, salaire et virement commun habituels (`settings`, sinon ceux du mois en cours), reste des budgets, `projected_savings` (épargne prévue à la clôture) et `projected_savings_budgets` (si budgets épuisés) — base du widget

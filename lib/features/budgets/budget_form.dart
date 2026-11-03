@@ -170,7 +170,8 @@ class _BudgetFormState extends ConsumerState<BudgetForm> {
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Hors budget'),
                 subtitle: const Text(
-                  'Pas d\'enveloppe : seules les dépenses sont affichées',
+                  'Pas d\'enveloppe ; ses dépenses sont hors budget : ni '
+                  'comptées ni déduites du compte courant',
                 ),
                 value: _horsBudget,
                 onChanged: _isSystem

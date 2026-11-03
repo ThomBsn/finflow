@@ -1,0 +1,5 @@
+# 009 — Mois de débit saisi, plutôt que déduit de la date
+*2026-11-03.*
+**Contexte :** la carte à débit différé cumule les dépenses sur une période qui ne suit pas le calendrier (ex. du 29/09 au 28/10, débitée le 4/11) et dont la date de coupure change d'un mois à l'autre. Le mois d'une dépense, calculé à partir de sa date, ne disait donc pas avec quel débit elle partirait ; et les dépenses du 1er au 3, saisies avant la bascule, tombaient dans un mois pas encore ouvert.
+**Décision :** `transactions.month` devient une colonne saisie, le **mois de débit** : prérempli avec le mois en cours (`pending`), modifiable à la saisie (mois suivant pour une dépense hors de la période déjà cumulée). Les transactions créées par les RPC gardent le mois de leur date. À la migration, les dépenses non réglées d'un mois postérieur au mois en cours ont été rattachées au mois en cours.
+**Conséquence :** clôture, budgets, résumé et filtres, qui utilisaient déjà `month`, suivent le mois de débit sans autre changement. La date ne sert plus qu'à l'affichage et aux prélèvements d'abonnements.

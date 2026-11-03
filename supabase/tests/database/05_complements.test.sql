@@ -60,8 +60,8 @@ select is(
    from public.budget_lines_current_month l
    join public.budgets b on b.id = l.budget_id where b.category = 'Loisirs'),
   '(66.66,1,3)', 'composition : mensualité 1/3');
-select is((select unsettled_expenses from public.current_month_summary), 200.00,
-  'courant : la dépense entière sera réglée à la clôture');
+select is((select unsettled_expenses from public.current_month_summary), 212.99,
+  'courant : la dépense entière sera réglée à la clôture (+ 12,99 d''abonnement prélevé avant la bascule)');
 select is(
   (select (monthly_amount, current_number, remaining_count, remaining_amount)::text
    from public.installment_plans_status),
@@ -129,7 +129,7 @@ select is((select current_amount from public.savings_projects where name = 'Vaca
 select is((select balance from public.accounts where type = 'epargne'), 300.00,
   'reprise : compte épargne crédité');
 select is((select balance from public.accounts where type = 'courant'), -82.99,
-  'reprise : courant inchangé (200 − 270 de dépenses − 12,99 d''abonnement)');
+  'reprise : courant inchangé (200 − 270 de dépenses, hors budget compris − 12,99 d''abonnement)');
 
 select public.save_to_savings(100, 'precis', current_setting('test.project')::uuid);
 select is((select current_amount from public.savings_projects where name = 'Vacances'),

@@ -157,18 +157,32 @@ class FinflowRepository {
 
   // Transactions -----------------------------------------------------------
 
+  /// Transactions d'un mois, ou de tous les mois si [month] est null.
   Future<List<Transaction>> transactions({
-    required DateTime month,
+    required DateTime? month,
     String? category,
   }) async {
     var query = _db
         .from('transactions')
-        .select('*, installment_plans(installments)')
-        .eq('month', dbDate(month));
+        .select('*, installment_plans(installments)');
+    if (month != null) query = query.eq('month', dbDate(month));
     if (category != null) query = query.eq('category', category);
     final rows = await query
         .order('date', ascending: false)
         .order('created_at', ascending: false);
+    return rows.map(Transaction.fromJson).toList();
+  }
+
+  /// Transactions hors budget que la clôture de [month] réglera (récap de
+  /// la modale de transition).
+  Future<List<Transaction>> horsBudgetToSettle(DateTime month) async {
+    final rows = await _db
+        .from('transactions')
+        .select('*, installment_plans(installments)')
+        .eq('hors_budget', true)
+        .eq('settled', false)
+        .eq('month', dbDate(month))
+        .order('date');
     return rows.map(Transaction.fromJson).toList();
   }
 
@@ -337,6 +351,36 @@ class FinflowRepository {
     'save_to_savings',
     params: {'p_amount': amount, 'p_mode': mode.db, 'p_project_id': projectId},
   );
+
+  /// Virement de l'épargne vers le courant, depuis un projet ou, sans
+  /// projet, l'Épargne générale d'abord et le Fond de sécurité en dernier.
+  /// [reimburses] : dépense remboursée par ce virement.
+  Future<void> withdrawFromSavings({
+    required double amount,
+    String? projectId,
+    String? reimburses,
+  }) => _db.rpc<void>(
+    'withdraw_from_savings',
+    params: {
+      'p_amount': amount,
+      'p_project_id': projectId,
+      'p_reimburses': reimburses,
+    },
+  );
+
+  /// Montant déjà remboursé depuis l'épargne, par dépense.
+  Future<Map<String, double>> reimbursements() async {
+    final rows = await _db
+        .from('transactions')
+        .select('reimburses_id, amount')
+        .not('reimburses_id', 'is', null);
+    final totals = <String, double>{};
+    for (final r in rows) {
+      final id = r['reimburses_id'] as String;
+      totals[id] = (totals[id] ?? 0) + (r['amount'] as num).toDouble();
+    }
+    return totals;
+  }
 
   // Distribution -----------------------------------------------------------
 

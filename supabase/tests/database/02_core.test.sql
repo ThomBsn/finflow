@@ -72,15 +72,14 @@ select is(
   0, '§3 dépenses d''octobre réglées');
 select ok(
   exists (select 1 from public.transactions
-          where user_id = pg_temp.uid(1) and type = 'revenu' and amount = 2500
+          where user_id = pg_temp.uid(1) and type = 'salaire' and amount = 2500
             and date = '2026-11-01' and settled),
   '§3 salaire de novembre crédité');
 select ok(
   exists (select 1 from public.transactions
-          where user_id = pg_temp.uid(1) and type = 'depense' and amount = 600
-            and category = 'Frais externes' and hors_budget and settled
-            and date = '2026-11-01'),
-  '§3 virement commun de novembre hors budget');
+          where user_id = pg_temp.uid(1) and type = 'transfert' and amount = 600
+            and category is null and settled and date = '2026-11-01'),
+  '§3 virement commun de novembre : transfert sans catégorie');
 select throws_ok(
   $$select public.close_month('2026-10-01', 2500, 600)$$,
   'FF001', null, '§3 double clic : octobre déjà clôturé, refusé');

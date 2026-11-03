@@ -24,7 +24,8 @@ enum TransactionType {
   revenu('revenu'),
   transfertEpargne('transfert_epargne'),
   retraitEpargne('retrait_epargne'),
-  transfert('transfert');
+  transfert('transfert'),
+  salaire('salaire');
 
   const TransactionType(this.db);
   final String db;
@@ -51,7 +52,7 @@ class Budget {
   );
 
   /// Budgets utilisés par les RPC : ni renommables ni supprimables.
-  static const systemCategories = {'Abonnements', 'Frais externes'};
+  static const systemCategories = {'Abonnements'};
 
   final String id;
   final String category;
@@ -117,7 +118,10 @@ class Transaction {
     required this.horsBudget,
     required this.settled,
     required this.installments,
-  });
+    this.immediate = false,
+    DateTime? month,
+    this.reimbursesId,
+  }) : month = month ?? date;
 
   factory Transaction.fromJson(Json json) => Transaction(
     id: json['id'] as String,
@@ -129,6 +133,9 @@ class Transaction {
     horsBudget: json['hors_budget'] as bool,
     settled: json['settled'] as bool,
     installments: _embeddedInstallments(json['installment_plans']),
+    immediate: json['immediate'] as bool,
+    month: _date(json['month']),
+    reimbursesId: json['reimburses_id'] as String?,
   );
 
   final String id;
@@ -137,11 +144,30 @@ class Transaction {
   final double amount;
   final String label;
   final String? category;
+
+  /// Exclue des budgets (mais déduite du courant) ; listée à la clôture.
   final bool horsBudget;
   final bool settled;
 
   /// Nombre de mois sur lesquels la dépense est étalée dans son budget.
   final int? installments;
+
+  /// Débitée du compte courant dès la saisie, pas à la clôture.
+  final bool immediate;
+
+  /// Mois de débit : celui dont la clôture la réglera (1er du mois).
+  final DateTime month;
+
+  /// Retrait d'épargne : dépense qu'il rembourse.
+  final String? reimbursesId;
+
+  /// Débitée avec un autre mois que celui de sa date.
+  bool get shiftedMonth => month.year != date.year || month.month != date.month;
+
+  /// Mouvement géré par la clôture ou un virement (salaire, compte commun,
+  /// épargne) : ni une dépense ni un revenu du mois.
+  bool get isMovement =>
+      type != TransactionType.depense && type != TransactionType.revenu;
 
   /// Ce que la RLS laisse modifier au client.
   bool get editable =>
@@ -150,7 +176,9 @@ class Transaction {
 
   /// Montant signé du point de vue du compte courant.
   double get signedAmount => switch (type) {
-    TransactionType.revenu || TransactionType.retraitEpargne => amount,
+    TransactionType.revenu ||
+    TransactionType.retraitEpargne ||
+    TransactionType.salaire => amount,
     _ => -amount,
   };
 }
@@ -168,6 +196,8 @@ class MonthSummary {
     required this.budgetRemaining,
     required this.projectedSavings,
     required this.projectedSavingsBudgets,
+    this.immediateExpenses = 0,
+    this.horsBudgetExpenses = 0,
   });
 
   factory MonthSummary.fromJson(Json json) => MonthSummary(
@@ -181,14 +211,24 @@ class MonthSummary {
     budgetRemaining: _money(json['budget_remaining']),
     projectedSavings: _money(json['projected_savings']),
     projectedSavingsBudgets: _money(json['projected_savings_budgets']),
+    immediateExpenses: _money(json['immediate_expenses']),
+    horsBudgetExpenses: _money(json['hors_budget_expenses']),
   );
 
   final DateTime month;
   final double courant;
   final double epargne;
 
-  /// Dépenses − revenus non réglés, déduits à la prochaine transition.
+  /// Dépenses − revenus non réglés, déduits à la prochaine transition
+  /// (sans hors budget ni débit immédiat).
   final double unsettledExpenses;
+
+  /// Débits immédiats du mois : déjà sortis du courant.
+  final double immediateExpenses;
+
+  /// Hors budget du mois (dépenses − revenus), déjà compris dans les
+  /// dépenses à régler.
+  final double horsBudgetExpenses;
 
   final double safetyMargin;
 
@@ -254,6 +294,8 @@ class TransactionDraft {
     required this.label,
     required this.category,
     required this.horsBudget,
+    this.immediate = false,
+    this.month,
   });
 
   final String? id;
@@ -263,6 +305,10 @@ class TransactionDraft {
   final String label;
   final String? category;
   final bool horsBudget;
+  final bool immediate;
+
+  /// Mois de débit ; null : la base prend le mois en cours.
+  final DateTime? month;
 
   Json toJson() => {
     'date': dbDate(date),
@@ -271,6 +317,8 @@ class TransactionDraft {
     'label': label,
     'category': category,
     'hors_budget': horsBudget,
+    'immediate': immediate,
+    if (month != null) 'month': dbDate(month!),
   };
 }
 

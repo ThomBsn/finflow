@@ -36,7 +36,8 @@ class TransactionsPage extends StatelessWidget {
   }
 }
 
-/// Transactions d'un mois, filtrables par catégorie.
+/// Transactions du mois en cours, ou de l'historique (un mois ou tous),
+/// filtrables par catégorie.
 class TransactionsTab extends ConsumerStatefulWidget {
   const TransactionsTab({super.key});
 
@@ -45,15 +46,17 @@ class TransactionsTab extends ConsumerStatefulWidget {
 }
 
 class _TransactionsTabState extends ConsumerState<TransactionsTab> {
-  DateTime? _month; // null : mois en cours
+  bool _currentOnly = true;
+  DateTime? _month; // hors mois en cours ; null : tous les mois
   String? _category; // null : toutes
+  bool _movements = false; // salaire, compte commun, virements d'épargne
 
   @override
   Widget build(BuildContext context) {
     final currentMonth = ref.watch(currentMonthProvider).value;
     final months = ref.watch(monthsProvider).value ?? const <DateTime>[];
     final budgets = ref.watch(budgetsProvider).value ?? const <Budget>[];
-    final month = _month ?? currentMonth;
+    final month = _currentOnly ? currentMonth : _month;
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -63,7 +66,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
             : () => showTransactionForm(context, budgets: budgets),
         child: const Icon(Icons.add),
       ),
-      body: month == null
+      body: currentMonth == null
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
@@ -71,27 +74,38 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: DropdownButtonFormField<DateTime>(
-                          initialValue: month,
-                          decoration: const InputDecoration(
-                            labelText: 'Mois',
-                            isDense: true,
-                          ),
-                          items: [
-                            for (final m
-                                in months.contains(month)
-                                    ? months
-                                    : [month, ...months])
-                              DropdownMenuItem(
-                                value: m,
-                                child: Text(monthLabel(m)),
-                              ),
-                          ],
-                          onChanged: (m) => setState(() => _month = m),
-                        ),
+                      FilterChip(
+                        label: const Text('Mois en cours'),
+                        tooltip: monthLabel(currentMonth),
+                        selected: _currentOnly,
+                        onSelected: (v) => setState(() {
+                          _currentOnly = v;
+                          _month = null;
+                        }),
                       ),
                       const SizedBox(width: 12),
+                      if (!_currentOnly) ...[
+                        Expanded(
+                          child: DropdownButtonFormField<DateTime?>(
+                            initialValue: _month,
+                            decoration: const InputDecoration(
+                              labelText: 'Mois',
+                              isDense: true,
+                            ),
+                            isExpanded: true,
+                            items: [
+                              const DropdownMenuItem(child: Text('Tous')),
+                              for (final m in months)
+                                DropdownMenuItem(
+                                  value: m,
+                                  child: Text(monthLabel(m)),
+                                ),
+                            ],
+                            onChanged: (m) => setState(() => _month = m),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
                         child: DropdownButtonFormField<String?>(
                           initialValue: _category,
@@ -117,10 +131,26 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                     ],
                   ),
                 ),
+                if (_category == null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilterChip(
+                        label: const Text('Salaire et virements'),
+                        tooltip:
+                            'Salaire, compte commun et virements d\'épargne : '
+                            'pas des dépenses',
+                        selected: _movements,
+                        onSelected: (v) => setState(() => _movements = v),
+                      ),
+                    ),
+                  ),
                 Expanded(
                   child: _TransactionList(
                     filter: (month: month, category: _category),
                     budgets: budgets,
+                    showMovements: _movements,
                   ),
                 ),
               ],
@@ -130,21 +160,40 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
 }
 
 class _TransactionList extends ConsumerWidget {
-  const _TransactionList({required this.filter, required this.budgets});
+  const _TransactionList({
+    required this.filter,
+    required this.budgets,
+    required this.showMovements,
+  });
 
   final TransactionFilter filter;
   final List<Budget> budgets;
 
+  /// Affiche aussi salaire, compte commun et virements d'épargne, jamais
+  /// comptés dans les dépenses.
+  final bool showMovements;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(transactionsProvider(filter));
+    final reimbursed =
+        ref.watch(reimbursementsProvider).value ?? const <String, double>{};
 
     return transactions.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Chargement impossible : $e')),
-      data: (items) {
+      data: (all) {
+        final items = showMovements
+            ? all
+            : all.where((t) => !t.isMovement).toList();
         if (items.isEmpty) {
-          return const Center(child: Text('Aucune transaction ce mois-ci'));
+          return Center(
+            child: Text(
+              filter.month == null
+                  ? 'Aucune transaction'
+                  : 'Aucune transaction ce mois-ci',
+            ),
+          );
         }
 
         final net = items
@@ -157,15 +206,19 @@ class _TransactionList extends ConsumerWidget {
         final icons = {for (final b in budgets) b.category: b.icon};
 
         final children = <Widget>[
-          ListTile(
-            title: const Text('Dépenses nettes'),
-            subtitle: const Text('Dépenses − revenus saisis'),
-            trailing: Text(
-              euro(net),
-              style: Theme.of(context).textTheme.titleMedium,
+          if (filter.month != null) ...[
+            ListTile(
+              title: const Text('Dépenses nettes'),
+              subtitle: const Text(
+                'Dépenses − revenus, hors budget et débits immédiats compris',
+              ),
+              trailing: Text(
+                euro(net),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
             ),
-          ),
-          const Divider(height: 1),
+            const Divider(height: 1),
+          ],
         ];
         DateTime? day;
         for (final t in items) {
@@ -177,6 +230,7 @@ class _TransactionList extends ConsumerWidget {
             _TransactionTile(
               transaction: t,
               icon: icons[t.category],
+              reimbursed: reimbursed[t.id],
               onTap: t.editable
                   ? () => showTransactionForm(
                       context,
@@ -225,11 +279,15 @@ class _TransactionTile extends StatelessWidget {
     required this.transaction,
     required this.icon,
     required this.onTap,
+    this.reimbursed,
   });
 
   final Transaction transaction;
   final String? icon;
   final VoidCallback? onTap;
+
+  /// Montant remboursé depuis l'épargne pour cette dépense.
+  final double? reimbursed;
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +299,18 @@ class _TransactionTile extends StatelessWidget {
       TransactionType.transfertEpargne => Icons.savings,
       TransactionType.retraitEpargne => Icons.savings_outlined,
       TransactionType.revenu when t.category == null => Icons.payments,
+      TransactionType.salaire => Icons.work_outline,
+      TransactionType.transfert => Icons.call_split,
       _ => categoryIcon(icon),
     };
     final title = t.label.isNotEmpty ? t.label : (t.category ?? 'Revenu');
     final details = [
       ?t.category,
       if (t.horsBudget) 'hors budget',
+      if (reimbursed != null) 'remboursée ${euro(reimbursed!)}',
+      if (t.reimbursesId != null) 'remboursement',
+      if (t.immediate) 'débit immédiat',
+      if (t.shiftedMonth) 'compte en ${monthLabel(t.month).toLowerCase()}',
       if (t.installments != null) 'étalée sur ${t.installments} mois',
       if (t.settled) 'réglée',
     ];

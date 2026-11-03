@@ -8,6 +8,7 @@ import '../../core/format.dart';
 import '../../core/widgets/amount_field.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../transactions/reimburse_sheet.dart';
 
 Future<CloseResult?> showCloseMonthSheet(
   BuildContext context,
@@ -209,7 +210,11 @@ class _CloseMonthSheetState extends ConsumerState<CloseMonthSheet> {
                 },
               ),
               const SizedBox(height: 8),
-              _Preview(preview: _preview),
+              _Preview(
+                preview: _preview,
+                immediateExpenses: _summary.immediateExpenses,
+              ),
+              _HorsBudgetRecap(month: _summary.month),
               if (_error != null) ...[
                 const SizedBox(height: 8),
                 Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
@@ -229,9 +234,12 @@ class _CloseMonthSheetState extends ConsumerState<CloseMonthSheet> {
 }
 
 class _Preview extends StatelessWidget {
-  const _Preview({required this.preview});
+  const _Preview({required this.preview, required this.immediateExpenses});
 
   final CloseResult? preview;
+
+  /// Débits immédiats comptés dans les dépenses, déjà sortis du courant.
+  final double immediateExpenses;
 
   @override
   Widget build(BuildContext context) {
@@ -262,6 +270,12 @@ class _Preview extends StatelessWidget {
             Text('Aperçu', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             row('Dépenses du mois réglées', p?.totalExpenses),
+            if (immediateExpenses > 0)
+              Text(
+                'dont ${euro(immediateExpenses)} de débits immédiats, déjà '
+                'sortis du courant',
+                style: theme.textTheme.bodySmall,
+              ),
             row('Épargne virée', p?.totalSavings, strong: true),
             row('Compte courant ensuite', p?.courant),
             if (p != null && p.courant < 0) ...[
@@ -272,6 +286,97 @@ class _Preview extends StatelessWidget {
                 style: TextStyle(color: theme.colorScheme.error),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Récap des transactions hors budget du mois, avec leur remboursement
+/// depuis l'épargne : déduites du courant par la clôture, hors budgets.
+class _HorsBudgetRecap extends ConsumerWidget {
+  const _HorsBudgetRecap({required this.month});
+
+  final DateTime month;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(horsBudgetToSettleProvider(month)).value;
+    final reimbursed =
+        ref.watch(reimbursementsProvider).value ?? const <String, double>{};
+    if (items == null || items.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final total = items.fold<double>(0, (sum, t) => sum - t.signedAmount);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Hors budget (${items.length})',
+                    style: theme.textTheme.labelLarge,
+                  ),
+                ),
+                Text(euro(total), style: theme.textTheme.titleMedium),
+              ],
+            ),
+            Text(
+              'Déduites du compte courant, hors budgets',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            for (final t in items)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        [
+                          t.label.isNotEmpty ? t.label : (t.category ?? ''),
+                          dayLabel(t.date),
+                        ].join(' · '),
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                    Text(
+                      '${t.signedAmount > 0 ? '+' : '−'} ${euro(t.amount)}',
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    if (t.type == TransactionType.depense)
+                      reimbursed[t.id] != null
+                          ? Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Tooltip(
+                                message:
+                                    'Remboursée ${euro(reimbursed[t.id]!)}',
+                                child: Icon(
+                                  Icons.check_circle,
+                                  size: 18,
+                                  color: Colors.green.shade600,
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              tooltip: 'Rembourser depuis l\'épargne',
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(
+                                Icons.savings_outlined,
+                                size: 18,
+                              ),
+                              onPressed: () =>
+                                  showReimburseSheet(context, expense: t),
+                            ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

@@ -6,6 +6,8 @@ import '../../core/format.dart';
 import '../../core/widgets/amount_field.dart';
 import '../../data/models.dart';
 import '../../data/providers.dart';
+import '../budgets/budget_gauge.dart';
+import 'reimburse_sheet.dart';
 
 Future<void> showTransactionForm(
   BuildContext context, {
@@ -19,7 +21,8 @@ Future<void> showTransactionForm(
   builder: (_) => TransactionForm(budgets: budgets, existing: existing),
 );
 
-/// Saisie ou modification d'une dépense / d'un revenu.
+/// Saisie ou modification d'une dépense / d'un revenu, ou virement entre
+/// l'épargne et le courant.
 class TransactionForm extends ConsumerStatefulWidget {
   const TransactionForm({super.key, required this.budgets, this.existing});
 
@@ -38,13 +41,23 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   late DateTime _date;
   String? _category;
   late bool _horsBudget;
+  late bool _immediate;
+
+  /// Mois de débit ; null : mois en cours.
+  DateTime? _month;
 
   /// Nombre de mois d'étalement sur le budget, null si pas étalée.
   int? _installments;
+
+  /// Virement : de l'épargne vers le courant (sinon l'inverse), depuis ou
+  /// vers un projet (null : répartition automatique).
+  bool _toCourant = true;
+  String? _projectId;
   bool _saving = false;
   String? _error;
 
   bool get _isNew => widget.existing == null;
+  bool get _isTransfer => _type == TransactionType.transfert;
 
   @override
   void initState() {
@@ -59,6 +72,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     _date = t?.date ?? DateTime(now.year, now.month, now.day);
     _category = t?.category;
     _horsBudget = t?.horsBudget ?? false;
+    _immediate = t?.immediate ?? false;
+    _month = t?.month;
     _installments = t?.installments;
     _amount.addListener(() => setState(() {}));
   }
@@ -74,9 +89,10 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
     final n = _installments;
     if (amount == null || amount <= 0 || n == null) return null;
     final share = (amount / n * 100).truncateToDouble() / 100;
-    final last = DateTime(_date.year, _date.month + n - 1);
+    final start = _month ?? ref.read(currentMonthProvider).value ?? _date;
+    final last = DateTime(start.year, start.month + n - 1);
     return '$n × ${euro(share)} sur $_category, de '
-        '${monthLabel(_date).toLowerCase()} à ${monthLabel(last).toLowerCase()}';
+        '${monthLabel(start).toLowerCase()} à ${monthLabel(last).toLowerCase()}';
   }
 
   @override
@@ -89,7 +105,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   void _selectCategory(String? category) {
     setState(() {
       _category = category;
-      // « Hors budget » suit la catégorie (ex. Frais externes), modifiable ensuite.
+      // « Hors budget » suit la catégorie (budget hors budget), modifiable ensuite.
       _horsBudget = widget.budgets.any(
         (b) => b.category == category && b.horsBudget,
       );
@@ -124,8 +140,34 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isTransfer) {
+      final repo = ref.read(repositoryProvider);
+      final amount = parseAmount(_amount.text)!;
+      return _run(
+        () => _toCourant
+            ? repo.withdrawFromSavings(amount: amount, projectId: _projectId)
+            : repo.saveToSavings(
+                amount: amount,
+                mode: _projectId == null
+                    ? DistributionMode.automatique
+                    : DistributionMode.precis,
+                projectId: _projectId,
+              ),
+      );
+    }
     await _run(() async {
       final repo = ref.read(repositoryProvider);
+      final installments = _canSpread ? _installments : null;
+      final current = widget.existing?.installments;
+      // Ne plus étaler avant d'enregistrer : la base refuse l'étalement
+      // d'une dépense hors budget.
+      if (installments == null && current != null) {
+        await repo.setInstallments(
+          widget.existing!.id,
+          installments: null,
+          current: current,
+        );
+      }
       final id = await repo.saveTransaction(
         TransactionDraft(
           id: widget.existing?.id,
@@ -135,14 +177,33 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           label: _label.text.trim(),
           category: _category,
           horsBudget: _horsBudget,
+          immediate: _type == TransactionType.depense && _immediate,
+          month: _month ?? ref.read(currentMonthProvider).value,
         ),
       );
-      await repo.setInstallments(
-        id,
-        installments: _canSpread ? _installments : null,
-        current: widget.existing?.installments,
-      );
+      if (installments != null) {
+        await repo.setInstallments(
+          id,
+          installments: installments,
+          current: current,
+        );
+      }
     });
+  }
+
+  /// Dépense hors budget déjà enregistrée : remboursable depuis l'épargne.
+  bool get _reimbursable =>
+      !_isNew &&
+      _horsBudget &&
+      widget.existing!.horsBudget &&
+      _type == TransactionType.depense;
+
+  double get _reimbursed =>
+      ref.watch(reimbursementsProvider).value?[widget.existing?.id] ?? 0;
+
+  Future<void> _reimburse() async {
+    final done = await showReimburseSheet(context, expense: widget.existing!);
+    if ((done ?? false) && mounted) Navigator.of(context).pop();
   }
 
   Future<void> _delete() async {
@@ -173,6 +234,19 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final statuses = {
+      for (final s
+          in ref.watch(budgetStatusProvider).value ?? const <BudgetStatus>[])
+        s.category: s,
+    };
+    final selected = statuses[_category];
+    final pending = ref.watch(currentMonthProvider).value;
+    final month = _month ?? pending;
+    final months = <DateTime>{
+      ?pending,
+      if (pending != null) DateTime(pending.year, pending.month + 1),
+      ?month,
+    }.toList()..sort();
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -194,18 +268,25 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
               ),
               const SizedBox(height: 16),
               SegmentedButton<TransactionType>(
-                segments: const [
-                  ButtonSegment(
+                segments: [
+                  const ButtonSegment(
                     value: TransactionType.depense,
                     label: Text('Dépense'),
                     icon: Icon(Icons.remove),
                   ),
-                  ButtonSegment(
+                  const ButtonSegment(
                     value: TransactionType.revenu,
                     label: Text('Revenu'),
                     icon: Icon(Icons.add),
                   ),
+                  if (_isNew)
+                    const ButtonSegment(
+                      value: TransactionType.transfert,
+                      label: Text('Virement'),
+                      icon: Icon(Icons.swap_horiz),
+                    ),
                 ],
+                showSelectedIcon: false,
                 selected: {_type},
                 onSelectionChanged: (s) => setState(() => _type = s.first),
               ),
@@ -223,74 +304,145 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                 label: 'Montant',
                 autofocus: _isNew,
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _label,
-                decoration: const InputDecoration(labelText: 'Libellé'),
-                textCapitalization: TextCapitalization.sentences,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String?>(
-                initialValue: _category,
-                decoration: const InputDecoration(labelText: 'Catégorie'),
-                isExpanded: true,
-                items: [
-                  if (_type == TransactionType.revenu)
-                    const DropdownMenuItem(child: Text('Aucune')),
-                  for (final b in widget.budgets)
-                    DropdownMenuItem(
-                      value: b.category,
-                      child: Text(b.category),
-                    ),
-                ],
-                validator: (c) => _type == TransactionType.depense && c == null
-                    ? 'Catégorie requise'
-                    : null,
-                onChanged: _selectCategory,
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event),
-                title: Text(dayLabel(_date)),
-                trailing: const Icon(Icons.edit_calendar),
-                onTap: _pickDate,
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Hors budget'),
-                subtitle: const Text(
-                  'Exclu des budgets, mais déduit à la fin du mois',
+              if (_isTransfer)
+                ..._transferFields(theme)
+              else ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _label,
+                  decoration: const InputDecoration(labelText: 'Libellé'),
+                  textCapitalization: TextCapitalization.sentences,
                 ),
-                value: _horsBudget,
-                onChanged: (v) => setState(() => _horsBudget = v),
-              ),
-              if (_canSpread) ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String?>(
+                  initialValue: _category,
+                  decoration: const InputDecoration(labelText: 'Catégorie'),
+                  isExpanded: true,
+                  selectedItemBuilder: (_) => [
+                    if (_type == TransactionType.revenu) const Text('Aucune'),
+                    for (final b in widget.budgets) Text(b.category),
+                  ],
+                  items: [
+                    if (_type == TransactionType.revenu)
+                      const DropdownMenuItem(child: Text('Aucune')),
+                    for (final b in widget.budgets)
+                      DropdownMenuItem(
+                        value: b.category,
+                        child: _CategoryChoice(
+                          category: b.category,
+                          status: statuses[b.category],
+                        ),
+                      ),
+                  ],
+                  validator: (c) =>
+                      _type == TransactionType.depense && c == null
+                      ? 'Catégorie requise'
+                      : null,
+                  onChanged: _selectCategory,
+                ),
+                if (selected != null && !selected.horsBudget) ...[
+                  const SizedBox(height: 12),
+                  _CategoryGauge(status: selected),
+                ],
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event),
+                  title: Text(dayLabel(_date)),
+                  trailing: const Icon(Icons.edit_calendar),
+                  onTap: _pickDate,
+                ),
+                if (month != null) ...[
+                  Text('Mois de débit', style: theme.textTheme.labelLarge),
+                  const SizedBox(height: 4),
+                  SegmentedButton<DateTime>(
+                    segments: [
+                      for (final m in months)
+                        ButtonSegment(value: m, label: Text(monthLabel(m))),
+                    ],
+                    selected: {month},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (s) => setState(() => _month = s.first),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Le mois dont la clôture la réglera (débit différé de la '
+                    'carte)',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Étaler sur le budget'),
+                  title: const Text('Hors budget'),
                   subtitle: const Text(
-                    'Payée en une fois, mais le budget ne compte qu\'une '
-                    'mensualité par mois',
+                    'Exclue des budgets, mais déduite du compte courant (ex. '
+                    'avance remboursée ensuite depuis l\'épargne)',
                   ),
-                  value: _installments != null,
-                  onChanged: (v) =>
-                      setState(() => _installments = v ? 3 : null),
+                  value: _horsBudget,
+                  onChanged: (v) => setState(() => _horsBudget = v),
                 ),
-                if (_installments != null)
-                  DropdownButtonFormField<int>(
-                    initialValue: _installments,
-                    decoration: InputDecoration(
-                      labelText: 'Nombre de mois',
-                      helperText: _spreadSummary,
-                      helperMaxLines: 2,
+                if (_reimbursable)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: _saving ? null : _reimburse,
+                      icon: const Icon(Icons.savings_outlined),
+                      label: Text(
+                        _reimbursed > 0
+                            ? 'Remboursée ${euro(_reimbursed)} · rembourser encore'
+                            : 'Rembourser depuis l\'épargne',
+                      ),
                     ),
-                    items: [
-                      for (final n in const [2, 3, 4, 5, 6, 8, 10, 12, 18, 24])
-                        DropdownMenuItem(value: n, child: Text('$n mois')),
-                    ],
-                    onChanged: (n) => setState(() => _installments = n),
                   ),
+                if (_type == TransactionType.depense)
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Débit immédiat'),
+                    subtitle: const Text(
+                      'Sort du compte courant tout de suite (virement, '
+                      'prélèvement…), pas avec le débit différé du mois',
+                    ),
+                    value: _immediate,
+                    onChanged: (v) => setState(() => _immediate = v),
+                  ),
+                if (_canSpread) ...[
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Étaler sur le budget'),
+                    subtitle: const Text(
+                      'Dépensée en entier, mais le budget ne compte qu\'une '
+                      'mensualité par mois',
+                    ),
+                    value: _installments != null,
+                    onChanged: (v) =>
+                        setState(() => _installments = v ? 3 : null),
+                  ),
+                  if (_installments != null)
+                    DropdownButtonFormField<int>(
+                      initialValue: _installments,
+                      decoration: InputDecoration(
+                        labelText: 'Nombre de mois',
+                        helperText: _spreadSummary,
+                        helperMaxLines: 2,
+                      ),
+                      items: [
+                        for (final n in const [
+                          2,
+                          3,
+                          4,
+                          5,
+                          6,
+                          8,
+                          10,
+                          12,
+                          18,
+                          24,
+                        ])
+                          DropdownMenuItem(value: n, child: Text('$n mois')),
+                      ],
+                      onChanged: (n) => setState(() => _installments = n),
+                    ),
+                ],
               ],
               if (_error != null) ...[
                 const SizedBox(height: 8),
@@ -311,7 +463,7 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                   const Spacer(),
                   FilledButton(
                     onPressed: _saving ? null : _save,
-                    child: const Text('Enregistrer'),
+                    child: Text(_isTransfer ? 'Virer' : 'Enregistrer'),
                   ),
                 ],
               ),
@@ -319,6 +471,141 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           ),
         ),
       ),
+    );
+  }
+
+  /// Sens du virement et projet d'épargne concerné.
+  List<Widget> _transferFields(ThemeData theme) {
+    final projects =
+        ref.watch(savingsProjectsProvider).value ?? const <SavingsProject>[];
+    final courant = ref.watch(monthSummaryProvider).value?.courant;
+    return [
+      const SizedBox(height: 16),
+      SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(
+            value: true,
+            label: Text('Épargne → courant'),
+            icon: Icon(Icons.south_west),
+          ),
+          ButtonSegment(
+            value: false,
+            label: Text('Courant → épargne'),
+            icon: Icon(Icons.north_east),
+          ),
+        ],
+        showSelectedIcon: false,
+        selected: {_toCourant},
+        onSelectionChanged: (s) => setState(() => _toCourant = s.first),
+      ),
+      const SizedBox(height: 16),
+      DropdownButtonFormField<String?>(
+        initialValue: _projectId,
+        decoration: InputDecoration(
+          labelText: _toCourant ? 'Depuis le projet' : 'Vers le projet',
+        ),
+        isExpanded: true,
+        items: [
+          DropdownMenuItem(
+            child: Text(
+              _toCourant
+                  ? 'Aucun : Épargne générale d\'abord'
+                  : 'Aucun : selon les pourcentages',
+            ),
+          ),
+          for (final p in projects)
+            DropdownMenuItem(
+              value: p.id,
+              child: Text(
+                '${p.name} · ${euro(p.currentAmount)}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+        onChanged: (id) => setState(() => _projectId = id),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        _toCourant
+            ? 'Le compte courant est crédité tout de suite. Sans projet, on '
+                  'puise dans l\'Épargne générale, puis les autres projets, et '
+                  'le Fond de sécurité en dernier. Ce qui n\'est pas dépensé '
+                  'repart en épargne à la clôture.'
+            : 'Le compte courant est débité tout de suite'
+                  '${courant == null ? '' : ' (${euro(courant)} aujourd\'hui)'}.',
+        style: theme.textTheme.bodySmall,
+      ),
+    ];
+  }
+}
+
+/// Catégorie dans la liste de choix, avec une mini-jauge de son budget.
+class _CategoryChoice extends StatelessWidget {
+  const _CategoryChoice({required this.category, required this.status});
+
+  final String category;
+  final BudgetStatus? status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = status;
+    if (s == null || s.horsBudget || s.allocated <= 0) {
+      return Text(category);
+    }
+    final remaining = s.allocated - s.spent - s.reserved;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(category, overflow: TextOverflow.ellipsis)),
+            Text(
+              remaining >= 0
+                  ? 'reste ${euro(remaining)}'
+                  : 'dépassé de ${euro(-remaining)}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: remaining < 0 ? theme.colorScheme.error : null,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        BudgetGauge(status: s, height: 3),
+      ],
+    );
+  }
+}
+
+/// Jauge du budget de la catégorie choisie, au mois en cours.
+class _CategoryGauge extends StatelessWidget {
+  const _CategoryGauge({required this.status});
+
+  final BudgetStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final s = status;
+    final remaining = s.allocated - s.spent - s.reserved;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        BudgetGauge(status: s, height: 4),
+        const SizedBox(height: 4),
+        Text(
+          s.allocated <= 0
+              ? 'Dépensé ${euro(s.spent)} ce mois-ci, sans enveloppe'
+              : '${euro(s.spent)} dépensés sur ${euro(s.allocated)} · '
+                    '${remaining >= 0 ? 'reste ${euro(remaining)}' : 'dépassé de ${euro(-remaining)}'}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: remaining < 0 && s.allocated > 0
+                ? theme.colorScheme.error
+                : null,
+          ),
+        ),
+      ],
     );
   }
 }

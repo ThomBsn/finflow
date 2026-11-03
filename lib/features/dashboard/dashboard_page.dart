@@ -216,11 +216,14 @@ class _ProjectionCard extends StatelessWidget {
               style: theme.textTheme.bodyMedium?.copyWith(color: onColor),
             ),
             const SizedBox(height: 4),
+            // Dépenses du mois = « Dépenses nettes » de la page Dépenses ; les
+            // débits immédiats sont déjà sortis du courant.
             Text(
-              'Salaire ${euro(s.suggestedSalary)} − compte commun '
-              '${euro(s.suggestedSharedTransfer)} − dépensé '
-              '${euro(s.unsettledExpenses)} − marge ${euro(s.safetyMargin)}'
-              '${s.courant != s.safetyMargin ? ' (courant ${euro(s.courant)})' : ''}',
+              'Courant ${euro(s.courant)} + salaire ${euro(s.suggestedSalary)} '
+              '− compte commun ${euro(s.suggestedSharedTransfer)} − dépenses '
+              'du mois ${euro(s.unsettledExpenses + s.immediateExpenses)}'
+              '${s.immediateExpenses > 0 ? ' (dont ${euro(s.immediateExpenses)} déjà débités du courant)' : ''}'
+              ' − marge ${euro(s.safetyMargin)}',
               style: theme.textTheme.bodySmall?.copyWith(color: onColor),
             ),
           ],

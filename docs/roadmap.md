@@ -12,7 +12,7 @@ Règle : un lot n'est terminé que si ses critères de fin sont tous cochés. Me
 - [x] Migrations : enums, tables, contraintes, index, RLS
 - [x] Trigger : somme des pourcentages ≤ 100
 - [x] Colonne calculée `transactions.month`
-- [x] Données par défaut à l'inscription (trigger) : comptes, Fond de sécurité, Épargne générale, catégories, « Frais externes » hors budget, budget « Abonnements »
+- [x] Données par défaut à l'inscription (trigger) : comptes, Fond de sécurité, Épargne générale, catégories, budget « Abonnements » (« Frais externes » retiré le 2026-11-03)
 **Fin :** les migrations s'appliquent sur une base vierge, un 2e utilisateur ne voit rien des données du 1er (`supabase test db`).
 
 ## Lot 2 — Cœur métier (tests d'abord)

@@ -32,11 +32,14 @@ update public.budgets set monthly_amount = 400 where category = 'Courses';
 insert into public.transactions (type, amount, category, date) values
   ('depense', 120, 'Courses', current_date),
   ('depense', 30, 'Courses', current_date),
-  ('revenu', 20, 'Courses', current_date),
-  ('depense', 999, 'Courses', current_date - interval '2 months');
+  ('revenu', 20, 'Courses', current_date);
+insert into public.transactions (type, amount, category, date, month) values
+  ('depense', 999, 'Courses', current_date - interval '2 months',
+   date_trunc('month', current_date - interval '2 months')::date);
+insert into public.budgets (category, hors_budget) values ('Dons', true);
 insert into public.transactions (type, amount, category, date, hors_budget)
 values ('depense', 50, 'Courses', current_date, true),
-       ('depense', 600, 'Frais externes', current_date, true);
+       ('depense', 600, 'Dons', current_date, true);
 insert into public.subscriptions (name, amount, billing_day) values
   ('Streaming', 12.99, 5), ('Musique', 10.99, 12);
 insert into public.subscriptions (name, amount, billing_day, active) values ('Ancien', 50, 1, false);
@@ -50,8 +53,8 @@ select is(
   (select allocated from public.budget_status_current_month where category = 'Abonnements'),
   23.98, 'Abonnements : alloué = Σ abonnements actifs');
 select is(
-  (select spent from public.budget_status_current_month where category = 'Frais externes'),
-  600.00, 'Frais externes : budget hors budget, compte ses propres dépenses');
+  (select spent from public.budget_status_current_month where category = 'Dons'),
+  600.00, 'budget hors budget : compte ses propres dépenses');
 select is((select count(*)::int from public.budget_status_current_month), 9,
   'une ligne par budget');
 
@@ -69,8 +72,8 @@ select throws_ok(
   $$update public.budgets set category = 'Abos' where category = 'Abonnements'$$,
   'FF006', null, 'budget Abonnements non renommable');
 select throws_ok(
-  $$delete from public.budgets where category = 'Frais externes'$$,
-  'FF006', null, 'budget Frais externes non supprimable');
+  $$delete from public.budgets where category = 'Abonnements'$$,
+  'FF006', null, 'budget Abonnements non supprimable');
 select lives_ok(
   $$delete from public.budgets where category = 'Loisirs'$$,
   'budget ordinaire supprimable');

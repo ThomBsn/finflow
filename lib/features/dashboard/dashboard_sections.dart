@@ -200,7 +200,8 @@ class RecentTransactionsSection extends ConsumerWidget {
       title: 'Dernières transactions',
       icon: Icons.receipt_long,
       path: '/depenses',
-      child: _async(transactions, (items) {
+      child: _async(transactions, (all) {
+        final items = all.where((t) => !t.isMovement).toList();
         if (items.isEmpty) return const _Empty('Aucune transaction ce mois-ci');
         return Column(
           children: [
@@ -208,12 +209,11 @@ class RecentTransactionsSection extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                leading: Icon(
-                  t.type == TransactionType.transfertEpargne
-                      ? Icons.savings
-                      : categoryIcon(icons[t.category]),
-                  size: 20,
-                ),
+                leading: Icon(switch (t.type) {
+                  TransactionType.transfertEpargne => Icons.savings,
+                  TransactionType.transfert => Icons.call_split,
+                  _ => categoryIcon(icons[t.category]),
+                }, size: 20),
                 title: Text(
                   t.label.isNotEmpty ? t.label : (t.category ?? 'Revenu'),
                   overflow: TextOverflow.ellipsis,
