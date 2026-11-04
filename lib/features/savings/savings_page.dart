@@ -17,7 +17,7 @@ class SavingsPage extends ConsumerWidget {
     final projects = ref.watch(savingsProjectsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Épargne')),
+      appBar: AppBar(toolbarHeight: 0),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Nouveau projet',
         onPressed: () => showProjectForm(context),

@@ -15,7 +15,6 @@ class BudgetsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final month = ref.watch(currentMonthProvider).value;
     final status = ref.watch(budgetStatusProvider);
     final budgets = {
       for (final b in ref.watch(budgetsProvider).value ?? const <Budget>[])
@@ -26,11 +25,7 @@ class BudgetsPage extends ConsumerWidget {
         showBudgetDetail(context, status: s, budget: budgets[s.id]);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          month == null ? 'Budgets' : 'Budgets · ${monthLabel(month)}',
-        ),
-      ),
+      appBar: AppBar(toolbarHeight: 0),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Nouveau budget',
         onPressed: () => showBudgetForm(context),

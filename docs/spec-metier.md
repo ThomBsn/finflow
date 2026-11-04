@@ -50,7 +50,9 @@ Courant avant transition = 350 · dépenses M = 1 400 · salaire = 2 500 · comm
 Courant avant = 100 · dépenses M = 2 300 · salaire = 2 500 · commun = 600
 → 100 − 2 300 + 2 500 − 600 = **−300** · épargne = 0 · courant final = **−300** → alerte.
 
-Salaire, virement compte commun et virements d'épargne (versements, retraits, remboursements) sont des **mouvements**, pas des dépenses : ils n'entrent dans aucun total de dépenses. La page Dépenses les masque par défaut (puce « Salaire et virements ») ; la page Distribution en fait le récap par clôture.
+Salaire, virement compte commun et virements d'épargne (versements, retraits, remboursements) sont des **mouvements**, pas des dépenses : ils n'entrent dans aucun total de dépenses. La page Dépenses ne les affiche pas ; la page Distribution en fait le récap par clôture.
+
+Page Dépenses, en tête : **Total** du mois (dépenses − revenus, hors budget compris, comme le débit de la banque) et **Dépenses nettes** (sans les hors budget : ce qui est vraiment dépensé), puis les filtres.
 
 ## 4. Solde négatif et rééquilibrage
 - Le compte courant **peut être négatif**.

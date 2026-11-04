@@ -19,7 +19,7 @@ class TransactionsPage extends StatelessWidget {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Dépenses'),
+          toolbarHeight: 0,
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Transactions'),
@@ -49,7 +49,6 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   bool _currentOnly = true;
   DateTime? _month; // hors mois en cours ; null : tous les mois
   String? _category; // null : toutes
-  bool _movements = false; // salaire, compte commun, virements d'épargne
 
   @override
   Widget build(BuildContext context) {
@@ -70,6 +69,7 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                _Totals(filter: (month: month, category: _category)),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Row(
@@ -131,26 +131,10 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
                     ],
                   ),
                 ),
-                if (_category == null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilterChip(
-                        label: const Text('Salaire et virements'),
-                        tooltip:
-                            'Salaire, compte commun et virements d\'épargne : '
-                            'pas des dépenses',
-                        selected: _movements,
-                        onSelected: (v) => setState(() => _movements = v),
-                      ),
-                    ),
-                  ),
                 Expanded(
                   child: _TransactionList(
                     filter: (month: month, category: _category),
                     budgets: budgets,
-                    showMovements: _movements,
                   ),
                 ),
               ],
@@ -159,19 +143,54 @@ class _TransactionsTabState extends ConsumerState<TransactionsTab> {
   }
 }
 
+/// Totaux du mois filtré : « Total » comprend les hors budget (comme le débit
+/// de la banque), « Dépenses nettes » non (ce qui est vraiment dépensé).
+class _Totals extends ConsumerWidget {
+  const _Totals({required this.filter});
+
+  final TransactionFilter filter;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(transactionsProvider(filter)).value;
+    if (filter.month == null || items == null) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+
+    double net(bool Function(Transaction) keep) => items
+        .where((t) => !t.isMovement && keep(t))
+        .fold<double>(0, (sum, t) => sum - t.signedAmount);
+
+    Widget row(String label, double value, {Color? color}) {
+      final style = theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: color,
+      );
+      return ListTile(
+        dense: true,
+        title: Text(label, style: style),
+        trailing: Text(euro(value), style: style),
+      );
+    }
+
+    return Column(
+      children: [
+        row('Total', net((_) => true)),
+        row(
+          'Dépenses nettes',
+          net((t) => !t.horsBudget),
+          color: theme.colorScheme.primary,
+        ),
+        const Divider(height: 1),
+      ],
+    );
+  }
+}
+
 class _TransactionList extends ConsumerWidget {
-  const _TransactionList({
-    required this.filter,
-    required this.budgets,
-    required this.showMovements,
-  });
+  const _TransactionList({required this.filter, required this.budgets});
 
   final TransactionFilter filter;
   final List<Budget> budgets;
-
-  /// Affiche aussi salaire, compte commun et virements d'épargne, jamais
-  /// comptés dans les dépenses.
-  final bool showMovements;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -183,9 +202,8 @@ class _TransactionList extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Chargement impossible : $e')),
       data: (all) {
-        final items = showMovements
-            ? all
-            : all.where((t) => !t.isMovement).toList();
+        // Salaire, compte commun et virements d'épargne : pas des dépenses.
+        final items = all.where((t) => !t.isMovement).toList();
         if (items.isEmpty) {
           return Center(
             child: Text(
@@ -196,30 +214,9 @@ class _TransactionList extends ConsumerWidget {
           );
         }
 
-        final net = items
-            .where(
-              (t) =>
-                  t.type == TransactionType.depense ||
-                  t.type == TransactionType.revenu,
-            )
-            .fold<double>(0, (sum, t) => sum - t.signedAmount);
         final icons = {for (final b in budgets) b.category: b.icon};
 
-        final children = <Widget>[
-          if (filter.month != null) ...[
-            ListTile(
-              title: const Text('Dépenses nettes'),
-              subtitle: const Text(
-                'Dépenses − revenus, hors budget et débits immédiats compris',
-              ),
-              trailing: Text(
-                euro(net),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const Divider(height: 1),
-          ],
-        ];
+        final children = <Widget>[];
         DateTime? day;
         for (final t in items) {
           if (t.date != day) {

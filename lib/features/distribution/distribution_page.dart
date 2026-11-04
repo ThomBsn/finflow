@@ -23,7 +23,7 @@ class _DistributionPageState extends ConsumerState<DistributionPage> {
     final months = ref.watch(closedMonthsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Distribution')),
+      appBar: AppBar(toolbarHeight: 0),
       body: months.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Chargement impossible : $e')),
