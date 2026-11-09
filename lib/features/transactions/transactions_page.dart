@@ -306,7 +306,7 @@ class _TransactionTile extends StatelessWidget {
       if (t.horsBudget) 'hors budget',
       if (reimbursed != null) 'remboursée ${euro(reimbursed!)}',
       if (t.reimbursesId != null) 'remboursement',
-      if (t.immediate) 'débit immédiat',
+      if (t.immediate && t.type == TransactionType.depense) 'débit immédiat',
       if (t.shiftedMonth) 'compte en ${monthLabel(t.month).toLowerCase()}',
       if (t.installments != null) 'étalée sur ${t.installments} mois',
       if (t.settled) 'réglée',

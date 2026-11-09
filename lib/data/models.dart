@@ -198,6 +198,7 @@ class MonthSummary {
     required this.projectedSavingsBudgets,
     this.immediateExpenses = 0,
     this.horsBudgetExpenses = 0,
+    this.horsBudgetPending = 0,
   });
 
   factory MonthSummary.fromJson(Json json) => MonthSummary(
@@ -213,6 +214,7 @@ class MonthSummary {
     projectedSavingsBudgets: _money(json['projected_savings_budgets']),
     immediateExpenses: _money(json['immediate_expenses']),
     horsBudgetExpenses: _money(json['hors_budget_expenses']),
+    horsBudgetPending: _money(json['hors_budget_pending']),
   );
 
   final DateTime month;
@@ -230,6 +232,10 @@ class MonthSummary {
   /// dépenses à régler.
   final double horsBudgetExpenses;
 
+  /// Hors budget pas encore remboursés depuis l'épargne : exclus de
+  /// l'épargne prévue (ils le seront), mais déduits par la clôture.
+  final double horsBudgetPending;
+
   final double safetyMargin;
 
   /// Salaire et virement commun habituels (réglages, sinon mois en cours).
@@ -239,8 +245,9 @@ class MonthSummary {
   /// Ce qui reste dans les enveloppes (abonnements à venir compris).
   final double budgetRemaining;
 
-  /// Ce que la prochaine clôture épargnera au rythme actuel ; négatif : le
-  /// courant passera d'autant sous la marge.
+  /// Ce que la prochaine clôture épargnera au rythme actuel, hors budget
+  /// supposés remboursés ; négatif : le courant passera d'autant sous la
+  /// marge.
   final double projectedSavings;
 
   /// Même chose si les budgets sont dépensés jusqu'au bout.

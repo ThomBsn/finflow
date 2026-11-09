@@ -45,7 +45,7 @@ insert into public.transactions (type, amount, label, category, date, hors_budge
 select is(
   (select (unsettled_expenses, hors_budget_expenses, projected_savings)::text
    from public.current_month_summary),
-  '(1700.00,300.00,350.00)', 'hors budget : compté dans l''épargne prévue, totalisé à part');
+  '(1700.00,300.00,650.00)', 'hors budget : déduit à la clôture, mais pas de l''épargne prévue (sera remboursé)');
 select is((select spent from public.budget_status_current_month where category = 'Loisirs'),
   0.00, 'hors budget : exclu du budget de sa catégorie');
 select set_config('test.preview', public.preview_close_month(2500, 600)::text, true);

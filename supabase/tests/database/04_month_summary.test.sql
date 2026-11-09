@@ -41,7 +41,7 @@ insert into public.transactions (user_id, type, amount, category, date, month) v
 set local role authenticated;
 select is(
   (select (month, courant, unsettled_expenses, projected_savings)::text from public.current_month_summary),
-  '(2026-10-01,350.00,1400.00,650.00)',
+  '(2026-10-01,400.00,1450.00,650.00)',
   'résumé : épargne prévue = courant + salaire − commun − dépenses − marge, dépense reportée au mois suivant exclue');
 reset role;
 update public.budgets set monthly_amount = 2000

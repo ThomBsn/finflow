@@ -7,13 +7,14 @@ Constante : `SAFETY_MARGIN = 200 €` (stockée dans `settings.safety_margin`).
 
 ## 2. Pendant le mois
 - L'utilisateur saisit dépenses et revenus. Une dépense a `settled = false` tant que le mois n'est pas clôturé.
-- Un **revenu** saisi en cours de mois (remboursement, prime…) vient **en déduction des dépenses** : il augmente d'autant l'épargne du mois.
+- Un **revenu** saisi en cours de mois (remboursement, prime…) est **crédité sur le courant dès sa saisie** (toujours immédiat) et vient **en déduction des dépenses** du mois : il augmente d'autant l'épargne du mois.
 - Le solde affiché du compte courant ne bouge pas avec les dépenses, sauf une dépense en **débit immédiat** (virement, prélèvement… hors carte à débit différé) : elle sort du courant dès sa saisie (et y revient si on la modifie ou la supprime avant la clôture).
 - La page Dépenses montre le mois en cours ; décocher « Mois en cours » affiche l'historique (tous les mois ou un mois choisi), y compris les dépenses du mois suivant saisies avant la clôture.
 - Banque : carte à **débit différé**. Les dépenses carte sont cumulées et prélevées en une fois le 4 du mois suivant, mais la période cumulée ne suit pas le calendrier (ex. du 29/09 au 28/10 pour le débit du 4/11) et sa date de coupure varie. Le salaire arrive vers le 27/28 ; la marge de 200 € n'absorbe que les prélèvements immédiats (abonnements). On clôture donc le mois **le 4**, une fois le débit différé passé.
 - Chaque dépense ou revenu porte son **mois de débit** (`month`) : le mois dont la clôture le réglera. Il est prérempli avec le mois en cours (même pour une dépense datée du mois suivant, saisie avant la bascule) et se change à la saisie, typiquement pour reporter au mois suivant une dépense des derniers jours, hors de la période déjà cumulée. Budgets, filtres et clôture suivent ce mois, pas la date.
 - Le dashboard et le widget affichent l'**épargne prévue** = ce que la prochaine clôture mettra de côté, recalculée à chaque saisie :
   `courant + salaire habituel − virement commun habituel − dépenses non réglées − marge`.
+  Les dépenses **hors budget** n'y sont pas retirées : elles seront remboursées depuis l'épargne (§7). Seule la part déjà remboursée est comptée (le remboursement a crédité le courant), si bien que l'épargne prévue ne bouge pas au remboursement. La clôture, elle, déduit tout : la modale prévient s'il reste des hors budget à rembourser.
   Négative : aucune épargne et le courant passera sous la marge d'autant. Une seconde valeur suppose les budgets dépensés jusqu'au bout (reste des enveloppes, abonnements à venir compris).
 - Salaire et virement commun habituels se règlent dans **Réglages** (sinon ceux du mois en cours) et préremplissent la clôture.
 

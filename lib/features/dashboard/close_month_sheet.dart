@@ -214,6 +214,17 @@ class _CloseMonthSheetState extends ConsumerState<CloseMonthSheet> {
                 preview: _preview,
                 immediateExpenses: _summary.immediateExpenses,
               ),
+              if (_summary.horsBudgetPending > 0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    '${euro(_summary.horsBudgetPending)} de dépenses hors '
+                    'budget ne sont pas encore remboursés : sans '
+                    'remboursement avant la clôture, l\'épargne virée sera '
+                    'plus basse d\'autant que l\'épargne prévue.',
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
               _HorsBudgetRecap(month: _summary.month),
               if (_error != null) ...[
                 const SizedBox(height: 8),
@@ -270,10 +281,10 @@ class _Preview extends StatelessWidget {
             Text('Aperçu', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
             row('Dépenses du mois réglées', p?.totalExpenses),
-            if (immediateExpenses > 0)
+            if (immediateExpenses != 0)
               Text(
-                'dont ${euro(immediateExpenses)} de débits immédiats, déjà '
-                'sortis du courant',
+                'dont ${euro(immediateExpenses)} déjà passés sur le courant '
+                '(débits immédiats et revenus)',
                 style: theme.textTheme.bodySmall,
               ),
             row('Épargne virée', p?.totalSavings, strong: true),

@@ -177,7 +177,8 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
           label: _label.text.trim(),
           category: _category,
           horsBudget: _horsBudget,
-          immediate: _type == TransactionType.depense && _immediate,
+          // Un revenu est toujours crédité tout de suite.
+          immediate: _type == TransactionType.revenu || _immediate,
           month: _month ?? ref.read(currentMonthProvider).value,
         ),
       );
@@ -288,12 +289,17 @@ class _TransactionFormState extends ConsumerState<TransactionForm> {
                 ],
                 showSelectedIcon: false,
                 selected: {_type},
-                onSelectionChanged: (s) => setState(() => _type = s.first),
+                onSelectionChanged: (s) => setState(() {
+                  // Revenu → dépense : débit différé par défaut.
+                  if (_type == TransactionType.revenu) _immediate = false;
+                  _type = s.first;
+                }),
               ),
               if (_type == TransactionType.revenu) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Un revenu (remboursement, prime…) vient en déduction des '
+                  'Un revenu (remboursement, prime…) est crédité sur le '
+                  'compte courant tout de suite et vient en déduction des '
                   'dépenses du mois.',
                   style: theme.textTheme.bodySmall,
                 ),
